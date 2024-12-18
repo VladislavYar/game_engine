@@ -1,0 +1,49 @@
+[tool.poetry]
+name = "game-engine"
+version = "0.1.0"
+description = ""
+authors = ["Vladislav Yaremenko <vlad.yaremenko.98@yandex.ru>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+pygame = "^2.6.1"
+pre-commit = "^4.0.1"
+ruff = "^0.8.3"
+pydantic = {extras = ["all"], version = "^2.10.4"}
+screeninfo = "^0.8.1"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+package-mode = false
+
+
+[tool.ruff]
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".git-rewrite",
+    ".mypy_cache",
+    ".pytest_cache",
+    ".pytype",
+    ".ruff_cache",
+    ".venv",
+    ".vscode",
+    "venv",
+    "frontendruff",
+    "migrations",
+]
+target-version = "py312"
+line-length = 119
+lint.ignore = ["D"]
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+line-ending = "auto"
+docstring-code-format = true
