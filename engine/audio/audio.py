@@ -24,7 +24,7 @@ class Audio:
         """Останавливает воспроизведение музыки."""
         mixer.music.stop()
 
-    def fadeout_music(time: int = 200) -> None:
+    def fadeout_music(self, time: int = 200) -> None:
         """Затухание музыки.
 
         Args:
@@ -56,7 +56,7 @@ class Audio:
         Args:
             filename (str): название файла.
         """
-        path = str(SoundsPathEnum.MUSICS / filename)
+        path = str(SoundsPathEnum.MUSICS.value / filename)
         mixer.music.load(path)
 
     def load_effect(self, filename: str) -> mixer.Sound:
@@ -68,7 +68,7 @@ class Audio:
         Returns:
             mixer.Sound: звук эффекта.
         """
-        path = str(SoundsPathEnum.EFFECTS / filename)
+        path = str(SoundsPathEnum.EFFECTS.value / filename)
         return self._load(path, self.effects_volume, self._effects)
 
     def load_voices(self, filename: str) -> mixer.Sound:
@@ -80,7 +80,7 @@ class Audio:
         Returns:
             mixer.Sound: звук голоса.
         """
-        path = str(SoundsPathEnum.VOICES / filename)
+        path = str(SoundsPathEnum.VOICES.value / filename)
         return self._load(path, self.voices_volume, self._voices)
 
     def _volume(self, attrname: str, volume: float, sounds: dict[str, mixer.Sound]) -> None:
