@@ -1,4 +1,6 @@
-from enum import IntEnum
+from enum import IntEnum, Enum
+
+from engine.constants import BasePathEnum
 
 
 COEFS_SCREEN = {
@@ -26,6 +28,22 @@ SCREEN_RESOLUTION_MESSAGE_ERROR = 'Разрешение экрана {}x{} не 
 MAX_LEN_CAPTION_TITLE = 120
 
 DEFAULT_NAME_ICON = 'icon.ico'
+
+
+class SettingsFilesPathEnum(Enum):
+    """Enum путей до до настроек."""
+
+    GRAPHICS = BasePathEnum.SETTINGS_PATH.value / 'graphics.json'
+    AUDIO = BasePathEnum.SETTINGS_PATH.value / 'audio.json'
+    ENGINE = BasePathEnum.SETTINGS_PATH.value / 'engine.json'
+
+
+class VolumeEnum(Enum):
+    """Enum громкости."""
+
+    DEFAULT_VOLUME = 0.5
+    MIN_VOLUME = 0
+    MAX_VOLUME = 1
 
 
 class FPSEnum(IntEnum):

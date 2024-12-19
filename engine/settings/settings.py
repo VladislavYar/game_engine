@@ -2,10 +2,9 @@ import os
 import json
 from pathlib import Path
 
-from pydantic import BaseModel
-
-from engine.settings.types import TYPES_SETTINGS
-from engine.settings.schemas import SettingsSchema
+from engine.settings.types import TYPES_SETTINGS, SETTINGS_SCHEMAS
+from engine.settings.schemas import AllSettingsSchema
+from engine.settings.constants import SettingsFilesPathEnum
 
 
 class Settings:
@@ -13,15 +12,7 @@ class Settings:
 
     def __init__(self) -> None:
         """Инициализация настроек."""
-        self.settings = SettingsSchema(**self._read_settings())
-
-    def _get_path_settings(self) -> Path:
-        """Отдаёт путь до файла настроек.
-
-        Returns:
-            Path: путь до файла настроек.
-        """
-        return Path(__file__).parent.parent.parent / 'data' / 'settings.json'
+        self._settings = self._get_settings()
 
     def _check_existence_settings_file(self, path: Path) -> None:
         """Проверяет наличие файла настроек и пути до него.
@@ -32,14 +23,15 @@ class Settings:
         os.makedirs(os.path.dirname(path), exist_ok=True)
         path.touch(exist_ok=True)
 
-    def _read_settings(self) -> dict[str, TYPES_SETTINGS]:
-        """Загрузка настроек из файла.
+    def _read_settings(self, path: Path) -> dict[str, TYPES_SETTINGS]:
+        """Загружает файл с настройками.
+
+        Args:
+            path (Path): путь до файла настроек.
 
         Returns:
             dict[str, TYPES_SETTINGS]: настройки игрового процесса.
         """
-        path = self._get_path_settings()
-        self._check_existence_settings_file(path)
         with open(path, 'r') as file_settings:
             try:
                 settings = json.load(file_settings)
@@ -49,25 +41,25 @@ class Settings:
             except Exception:
                 return {}
 
-    def __getitem__(self, key: str) -> TYPES_SETTINGS:
-        """Отдаёт настройку по ключу.
-
-        Args:
-            key (str): ключ настройки.
+    def _get_settings(self) -> AllSettingsSchema:
+        """Отдаёт настройки игрового процесса.
 
         Returns:
-            TYPES_SETTINGS: настройка.
+            AllSettingsSchema: настройки игрового процесса.
         """
-        value = getattr(self.settings, key)
-        if isinstance(value, BaseModel):
-            return tuple(value.model_dump().values())
-        return value
+        settings = {}
+        for path in SettingsFilesPathEnum:
+            self._check_existence_settings_file(path.value)
+            settings[path.name.lower()] = self._read_settings(path.value)
+        return AllSettingsSchema(**settings)
 
-    def __setitem__(self, key: str, value: TYPES_SETTINGS) -> None:
-        """Устанавливает настройку по ключу.
+    def __getitem__(self, key: str) -> SETTINGS_SCHEMAS:
+        """Отдаёт группу настроек по ключу.
 
         Args:
-            key (str): ключ настройки.
-            value (TYPES_SETTINGS): значение настройки.
+            key (str): ключ группы настроек.
+
+        Returns:
+            SETTINGS_SCHEMAS: группа настроек.
         """
-        setattr(self.settings, key, value)
+        return getattr(self._settings, key)
