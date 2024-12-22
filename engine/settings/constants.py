@@ -30,6 +30,14 @@ MAX_LEN_CAPTION_TITLE = 120
 DEFAULT_NAME_ICON = 'icon.ico'
 
 
+class TimeBetweenAnimationFrames(IntEnum):
+    """Enum промежуток времени между кадрами."""
+
+    DEFAULT_TIME = 150
+    MIN_TIME = 10
+    MAX_TIME = 1000
+
+
 class SettingsFilesPathEnum(Enum):
     """Enum путей до до настроек."""
 

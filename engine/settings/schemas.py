@@ -6,6 +6,7 @@ from engine.settings.constants import (
     SCREEN_RESOLUTION_MESSAGE_ERROR,
     MAX_LEN_CAPTION_TITLE,
     DEFAULT_NAME_ICON,
+    TimeBetweenAnimationFrames,
     VolumeEnum,
     FPSEnum,
 )
@@ -116,6 +117,12 @@ class EngineSettingsSchema(BaseSettingsSchema):
         default_factory=lambda: str(BasePathEnum.ICONS_PATH.value / DEFAULT_NAME_ICON),
         alias='name_icon',
         description='Название иконки окна игры',
+    )
+    time_between_animation_frames: int = Field(
+        default=TimeBetweenAnimationFrames.DEFAULT_TIME,
+        ge=TimeBetweenAnimationFrames.MIN_TIME,
+        le=TimeBetweenAnimationFrames.MAX_TIME,
+        description='Время между кадрами анимаций',
     )
 
     @field_validator('path_icon', mode='after')

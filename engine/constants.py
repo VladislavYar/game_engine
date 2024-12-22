@@ -2,6 +2,9 @@ from enum import Enum
 from pathlib import Path
 
 
+DEFAULT_EVENT = -1
+
+
 class BasePathEnum(Enum):
     """Enum базовых путей."""
 
@@ -11,3 +14,4 @@ class BasePathEnum(Enum):
     SETTINGS_PATH = RESOURCES_PATH / 'settings'
     IMAGES_PATH = RESOURCES_PATH / 'images'
     ICONS_PATH = IMAGES_PATH / 'icons'
+    ANIMATIONS_PATH = IMAGES_PATH / 'animations'

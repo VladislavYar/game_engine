@@ -1,0 +1,4 @@
+from engine.constants import DEFAULT_EVENT
+
+
+DEFAULT_EVENT_ANIMATION = (DEFAULT_EVENT,)

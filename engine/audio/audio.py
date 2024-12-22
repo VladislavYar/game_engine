@@ -6,10 +6,6 @@ from engine.audio.constants import SoundsPathEnum
 class Audio:
     """Класс управления звуками и музыкой."""
 
-    _music_volume: float
-    _effects_volume: float
-    _voices_volume: float
-
     def __init__(self) -> None:
         """Инициализация аудио игрового процесса."""
         mixer.init()
