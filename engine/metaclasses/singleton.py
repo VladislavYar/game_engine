@@ -5,7 +5,7 @@ class SingletonMeta(type):
         _instances (dict[type: object]): словарь для хранения уже созданных объектов классов.
     """
 
-    _instances: dict[type:object] = {}
+    _instances: dict[type, object] = {}
 
     def __call__(cls: type, *args, **kwargs) -> object:
         """Создаёт объект класса или отдаёт уже созданный.

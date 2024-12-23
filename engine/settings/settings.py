@@ -4,7 +4,7 @@ from pathlib import Path
 
 from engine.settings.types import TYPES_SETTINGS, SETTINGS_SCHEMAS
 from engine.settings.schemas import AllSettingsSchema
-from engine.settings.constants import SettingsFilesPathEnum
+from engine.settings.constants import SettingsFilesPathEnum, ENCODING
 
 
 class Settings:
@@ -32,7 +32,7 @@ class Settings:
         Returns:
             dict[str, TYPES_SETTINGS]: настройки игрового процесса.
         """
-        with open(path, 'r') as file_settings:
+        with open(path, 'r', encoding=ENCODING) as file_settings:
             try:
                 settings = json.load(file_settings)
                 if isinstance(settings, dict):

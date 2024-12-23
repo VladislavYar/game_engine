@@ -3,7 +3,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Iterator
 
-from pygame import key, surface, time, image as img
+from pygame import key, surface, time, image, rect, mask, SRCALPHA
 
 from engine.utils.file import validate_format_file
 from engine.constants import BasePathEnum
@@ -12,15 +12,37 @@ from engine.events.constants import DEFAULT_EVENT
 from engine.events import Events
 
 
+@dataclass
+class Frame:
+    """Dataclass представляющий кадр анимации.
+
+    Attributes:
+        image (surface.Surface): изображение кадра анимации.
+        rect (rect.Rect): rect кадра анимации.
+        mask (mask.Mask): маска кадра анимации.
+    """
+
+    image: surface.Surface
+    rect: rect.Rect
+    mask: mask.Mask
+
+
 class Animation:
     """Класс представляющий анимацию.
 
     Attributes:
         time_between_frames (int): время между кадрами.
+        _audio (Audio): объект для работы с аудио.
+        _no_frame (Frame): пустое отображение.
     """
 
     time_between_frames: int
-    audio: Audio
+    _audio: Audio = Audio()
+    _no_frame: Frame = Frame(
+        surface.Surface((0, 0), SRCALPHA),
+        surface.Surface((0, 0), SRCALPHA).get_rect(),
+        surface.Surface((0, 0), SRCALPHA).get_masks(),
+    )
 
     def __init__(self, dir: str | Path, is_loop: bool = False, sound: str | None = None) -> None:
         """Инициализация анимации.
@@ -34,28 +56,8 @@ class Animation:
         images = self._get_full_path_images(path)
         self._frames = self._get_frames(images)
         self.is_loop = is_loop
-        self._sound = self.audio.load_effect(sound) if sound else None
+        self._sound = self._audio.load_effect(sound) if sound else None
         self._count_frames = len(self._frames)
-        self._set_default_values()
-
-    def _set_default_values(self) -> None:
-        """Устанавливает дефолтные значения."""
-        self._active_frame = 0
-        self._elapsed = 0
-        self._ticks = time.get_ticks()
-        self.is_active = False
-        if self._sound and self.is_loop:
-            self._sound.stop()
-
-    def start(self) -> None:
-        """Запускает анимацию."""
-        self._set_default_values()
-        self.is_active = True
-        if self._sound:
-            self._sound.play(loops=-1 if self.is_loop else 0)
-
-    def stop(self) -> None:
-        """Останавливает анимацию."""
         self._set_default_values()
 
     def _get_full_path_images(self, path: Path) -> list[str]:
@@ -75,7 +77,7 @@ class Animation:
                 images.append(full_path)
         return images
 
-    def _get_frames(self, images: list[str]) -> list[surface.Surface]:
+    def _get_frames(self, images: list[str]) -> tuple[Frame]:
         """Отдаёт список кадров.
 
         Args:
@@ -85,15 +87,43 @@ class Animation:
             ValueError: ошибка валидации при отсутвии кадров.
 
         Returns:
-            list[surface.Surface]: список кадров.
+            tuple[Frame]: список кадров.
         """
         frames = []
-        for image in images:
-            frame = img.load(image).convert_alpha()
-            frames.append(frame)
+        for img in images:
+            img = image.load(img).convert_alpha()
+            rect = img.get_rect()
+            mask = img.get_masks()
+            frames.append(Frame(img, rect, mask))
         if not len(frames):
             raise ValueError('Анимация должна содержать хотя бы один кадр.')
-        return frames
+        return tuple(frames)
+
+    def _set_default_values(self) -> None:
+        """Устанавливает дефолтные значения."""
+        self._active_frame = 0
+        self._elapsed = 0
+        self._ticks = time.get_ticks()
+        self.is_active = False
+        if self._sound and self.is_loop:
+            self._sound.stop()
+
+    def restart(self) -> None:
+        """Перезапускает анимацию."""
+        self._set_default_values()
+        self.is_active = True
+        if self._sound:
+            self._sound.play(loops=-1 if self.is_loop else 0)
+
+    def start(self) -> None:
+        """Запускает анимацию, если не активна."""
+        if not self.is_active:
+            self.restart()
+
+    def stop(self) -> None:
+        """Останавливает анимацию, если активна."""
+        if self.is_active:
+            self._set_default_values()
 
     @property
     def frame(self) -> surface.Surface:
@@ -103,7 +133,7 @@ class Animation:
             surface.Surface: кадр анимации.
         """
         if not self.is_active:
-            return surface.Surface((0, 0))
+            return self._no_frame
 
         if self._count_frames == 1:
             return self._frames[0]
@@ -119,7 +149,7 @@ class Animation:
             self._active_frame = self._count_frames // self._active_frame - 1
             if not self.is_loop:
                 self.stop()
-                return surface.Surface((0, 0))
+                return self._no_frame
         return frame
 
 
@@ -155,25 +185,25 @@ class EventsAnimation:
         return hash(self.events)
 
 
-class EventAnimationGroup:
-    """Класс группы EventAnimation."""
+class EventsAnimationGroup:
+    """Класс группы EventsAnimation."""
 
     def __init__(self, *arg: EventsAnimation) -> None:
-        """Инициализирует группу EventAnimation."""
+        """Инициализирует группу EventsAnimation."""
         self._events_animations = {events_animation: events_animation for events_animation in arg}
         if not self._events_animations[DEFAULT_EVENT]:
             raise ValueError('Дефолтная анимация является обязательной.')
 
-    def __getitem__(self, key: Events) -> EventsAnimation:
+    def __getitem__(self, key: Events) -> EventsAnimation | None:
         """Отдаёт связь events и анимации по ключу.
 
         Args:
             key (Events): ключ events.
 
         Returns:
-            EventsAnimation: связь events и анимации.
+            EventsAnimation | None: связь events и анимации.
         """
-        return self._events_animations[key]
+        return self._events_animations.get(key)
 
     def __iter__(self) -> Iterator:
         """Итератор по объектам EventsAnimation.
@@ -189,17 +219,16 @@ class AnimationGroup:
 
     def __init__(
         self,
-        events_animations: EventAnimationGroup,
+        events_animations: EventsAnimationGroup,
     ) -> None:
         """Инициализация группы анимаций.
 
         Args:
-            events_animations (EventAnimationGroup): группа объектов EventsAnimation.
+            events_animations (EventsAnimationGroup): группа объектов EventsAnimation.
         """
         self._events_animations = events_animations
-        self._default_animation = events_animations[DEFAULT_EVENT]
-        self._current_animation: EventsAnimation = self._default_animation
-        self._old_current_animation: EventsAnimation = self._default_animation
+        self._default_animation = self._events_animations[DEFAULT_EVENT]
+        self._current_animation = self._old_current_animation = self._default_animation
 
     def _check_events(self, events: Events, pressed: key.ScancodeWrapper) -> bool:
         """Проверка событий.
@@ -211,9 +240,7 @@ class AnimationGroup:
         Returns:
             bool: флаг соответсвия событиям.
         """
-        if events == DEFAULT_EVENT:
-            return True
-        return all([pressed[event] for event in events])
+        return events == DEFAULT_EVENT or all([pressed[event] for event in events])
 
     def _check_old_current_animation(self, pressed: key.ScancodeWrapper) -> None:
         """Проверка актуальности старой анимации.
@@ -222,9 +249,7 @@ class AnimationGroup:
             pressed (key.ScancodeWrapper): кортеж состояний кнопок.
         """
         events = self._old_current_animation.events
-        if events == DEFAULT_EVENT:
-            return
-        if not self._check_events(events, pressed):
+        if events != DEFAULT_EVENT and not self._check_events(events, pressed):
             self._old_current_animation = self._default_animation
 
     def _check_current_animation(self, pressed: key.ScancodeWrapper) -> None:
@@ -236,10 +261,9 @@ class AnimationGroup:
         if not self._current_animation.animation.is_active or not self._check_events(
             self._current_animation.events, pressed
         ):
-            self._old_current_animation = self._current_animation
             self._current_animation.animation.stop()
-            self._default_animation.animation.start()
-            self._current_animation = self._default_animation
+            self._default_animation.animation.restart()
+            self._old_current_animation, self._current_animation = self._current_animation, self._default_animation
 
     def _set_new_animations(self, events_animation: EventsAnimation) -> None:
         """Устанавливает новую анимацию.
@@ -249,27 +273,36 @@ class AnimationGroup:
         """
         animation = events_animation.animation
         old_animation = self._old_current_animation.animation
-        if not old_animation.is_loop and old_animation == animation:
-            return
-        self._current_animation = events_animation
-        if not animation.is_active:
+        if old_animation.is_loop and old_animation != animation:
+            self._current_animation = events_animation
             animation.start()
 
-    def events(self) -> None:
-        """Проверка событий, совершённых пользователем."""
-        pressed = key.get_pressed()
-        self._check_old_current_animation(pressed)
-        self._check_current_animation(pressed)
+    def _check_new_animation(self, pressed: key.ScancodeWrapper) -> None:
+        """Проверяет установку новой анимации.
+
+        Args:
+            pressed (key.ScancodeWrapper): кортеж состояний кнопок.
+        """
         for events_animation in self._events_animations:
             if self._check_events(events_animation.events, pressed):
                 self._set_new_animations(events_animation)
                 break
 
+    def events(self, pressed: key.ScancodeWrapper) -> None:
+        """Проверка событий, совершённых пользователем.
+
+        Args:
+            pressed (key.ScancodeWrapper): кортеж состояний кнопок.
+        """
+        self._check_old_current_animation(pressed)
+        self._check_current_animation(pressed)
+        self._check_new_animation(pressed)
+
     @property
-    def frame(self) -> surface.Surface:
+    def frame(self) -> Frame:
         """Отдаёт следующий кадр анимации.
 
         Returns:
-            surface.Surface: кадр анимации.
+            Frame: кадр анимации.
         """
         return self._current_animation.animation.frame

@@ -6,7 +6,11 @@ from engine.events.events import Events
 class EventEnum(IntEnum):
     """Кастомные event."""
 
-    DEFAULT_EVENT = -1
+    DEFAULT_EVENT = 2000000001
+    INACTIVE_EVENT = 2000000002
+    COLLISION_MOS_EVENT = 2000000003
 
 
 DEFAULT_EVENT = Events(EventEnum.DEFAULT_EVENT)
+INACTIVE_EVENT = Events(EventEnum.INACTIVE_EVENT)
+COLLISION_MOS_EVENT = Events(EventEnum.COLLISION_MOS_EVENT)

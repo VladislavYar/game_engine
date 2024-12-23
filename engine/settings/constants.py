@@ -29,6 +29,8 @@ MAX_LEN_CAPTION_TITLE = 120
 
 DEFAULT_NAME_ICON = 'icon.ico'
 
+ENCODING = 'utf-8'
+
 
 class TimeBetweenAnimationFrames(IntEnum):
     """Enum промежуток времени между кадрами."""

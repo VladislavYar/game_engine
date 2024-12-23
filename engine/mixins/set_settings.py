@@ -6,28 +6,32 @@ from engine.animations import Animation
 class SetSettingsMixin:
     """Mixin установки настроек игрового процесса."""
 
-    def _set_settings_display(self) -> None:
+    @classmethod
+    def _set_settings_display(cls) -> None:
         """Устанавливает настройки дисплея."""
-        flags = pygame.FULLSCREEN if self.settings['graphics']['fullscreen'] else pygame.SHOWN
-        self.display = pygame.display.set_mode(
-            self.settings['graphics']['screen_resolution'],
+        flags = pygame.FULLSCREEN if cls._settings['graphics']['fullscreen'] else pygame.SHOWN
+        cls.display = pygame.display.set_mode(
+            cls._settings['graphics']['screen_resolution'],
             flags,
         )
-        pygame.display.set_caption(self.settings['engine']['caption_title'])
-        pygame.display.set_icon(pygame.image.load(self.settings['engine']['path_icon']))
+        pygame.display.set_caption(cls._settings['engine']['caption_title'])
+        pygame.display.set_icon(pygame.image.load(cls._settings['engine']['path_icon']))
 
-    def _set_settings_audio(self) -> None:
+    @classmethod
+    def _set_settings_audio(cls) -> None:
         """Устанавливает настройки аудио."""
-        self.audio.music_volume = self.settings['audio']['music_volume']
-        self.audio.effects_volume = self.settings['audio']['effects_volume']
-        self.audio.voices_volume = self.settings['audio']['voices_volume']
+        cls._audio.music_volume = cls._settings['audio']['music_volume']
+        cls._audio.effects_volume = cls._settings['audio']['effects_volume']
+        cls._audio.voices_volume = cls._settings['audio']['voices_volume']
 
-    def _set_settings_animations(self) -> None:
+    @classmethod
+    def _set_settings_animations(cls) -> None:
         """Устанавливает настройки анимаций."""
-        Animation.time_between_frames = self.settings['engine']['time_between_animation_frames']
+        Animation.time_between_frames = cls._settings['engine']['time_between_animation_frames']
 
-    def _set_settings(self) -> None:
+    @classmethod
+    def _set_settings(cls) -> None:
         """Установка настроек игрового процесса."""
-        self._set_settings_display()
-        self._set_settings_audio()
-        self._set_settings_animations()
+        cls._set_settings_display()
+        cls._set_settings_audio()
+        cls._set_settings_animations()

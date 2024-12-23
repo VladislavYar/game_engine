@@ -1,34 +1,37 @@
-from pygame import sprite
-import pygame
+from pygame import key, sprite
 
-from engine.animations import Animation, AnimationGroup, EventsAnimation, EventAnimationGroup
-from engine.events.constants import DEFAULT_EVENT
-from engine.events import Events
+from engine.animations import AnimationGroup, EventsAnimationGroup
+from engine.objects.groups import BaseGroup
 
 
 class BaseObject(sprite.Sprite):
     """Базовый объект игровог процесса.
 
     Attributes:
-        _all_sprites (sprite.Group): группа всех спрайтов.
+        _all_sprites (BaseGroup): группа всех спрайтов.
+        events_animation_group (EventsAnimationGroup): группа событий и связанных с ними анимаций.
     """
 
-    _all_sprites = sprite.Group()
+    _all_sprites = BaseGroup()
+    events_animation_group: EventsAnimationGroup
 
-    _events_animations = EventAnimationGroup(
-        EventsAnimation(Events(pygame.K_w, pygame.K_a), Animation('test3', is_loop=True)),
-        EventsAnimation(Events(pygame.K_a), Animation('test2', is_loop=True)),
-        EventsAnimation(DEFAULT_EVENT, Animation('test', is_loop=True)),
-    )
-
-    def __init__(self) -> None:
+    def __init__(self, *arg: BaseGroup) -> None:
         """Инициализация базового объекта."""
-        super().__init__(self._all_sprites)
-        self._animation_group = AnimationGroup(events_animations=self._events_animations)
+        super().__init__(self._all_sprites, *arg)
+        self._animation_group = AnimationGroup(events_animations=self.events_animation_group)
+
+    def events(self, pressed: key.ScancodeWrapper) -> None:
+        """Проверка совершённых событий.
+
+        Args:
+            pressed (key.ScancodeWrapper): кортеж состояний кнопок.
+        """
+        self._animation_group.events(pressed)
 
     def update(self) -> None:
-        self._animation_group.events()
+        """Логика обновления спрайта."""
         frame = self._animation_group.frame
-        self.image = frame
-        self.rect = frame.get_rect()
+        self.image = frame.image
+        self.rect = frame.rect
+        self.mask = frame.mask
         self.rect.center = (500, 500)
