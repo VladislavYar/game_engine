@@ -1,13 +1,15 @@
 import os
 from pathlib import Path
 from dataclasses import dataclass
+from typing import Iterator
 
 from pygame import key, surface, time, image as img
 
 from engine.utils.file import validate_format_file
 from engine.constants import BasePathEnum
 from engine.audio import Audio
-from engine.animations.constants import DEFAULT_EVENT_ANIMATION
+from engine.events.constants import DEFAULT_EVENT
+from engine.events import Events
 
 
 class Animation:
@@ -18,21 +20,21 @@ class Animation:
     """
 
     time_between_frames: int
-    audio_engine: Audio
+    audio: Audio
 
-    def __init__(self, dir: str | Path, is_loop: bool = False, audio: str | None = None) -> None:
+    def __init__(self, dir: str | Path, is_loop: bool = False, sound: str | None = None) -> None:
         """Инициализация анимации.
 
         Args:
             dir (str): директорию анимации.
             is_loop (bool): зацикленная анимация. По дефолту False.
-            audio (str | None): название файла аудио анимации. По дефолту None.
+            sound (str | None): название файла аудио анимации. По дефолту None.
         """
         path = BasePathEnum.ANIMATIONS_PATH.value / dir
         images = self._get_full_path_images(path)
         self._frames = self._get_frames(images)
         self.is_loop = is_loop
-        self._audio = self.audio_engine.load_effect(audio) if audio else None
+        self._sound = self.audio.load_effect(sound) if sound else None
         self._count_frames = len(self._frames)
         self._set_default_values()
 
@@ -42,15 +44,15 @@ class Animation:
         self._elapsed = 0
         self._ticks = time.get_ticks()
         self.is_active = False
-        if self._audio and self.is_loop:
-            self._audio.stop()
+        if self._sound and self.is_loop:
+            self._sound.stop()
 
     def start(self) -> None:
         """Запускает анимацию."""
         self._set_default_values()
         self.is_active = True
-        if self._audio:
-            self._audio.play(loops=-1 if self.is_loop else 0)
+        if self._sound:
+            self._sound.play(loops=-1 if self.is_loop else 0)
 
     def stop(self) -> None:
         """Останавливает анимацию."""
@@ -123,10 +125,63 @@ class Animation:
 
 @dataclass
 class EventsAnimation:
-    """Dataclass представляющий связь кортежа events и анимации."""
+    """Dataclass представляющий связь events и анимации."""
 
-    events: tuple[int, ...]
+    events: Events
     animation: Animation
+
+    def __eq__(self, other: Events) -> bool:
+        """Проверка на равество объектов.
+
+        Args:
+            other (Events): сравниваемый объект.
+
+        Raises:
+            TypeError: ошибка не верного типа объекта.
+
+        Returns:
+            bool: результат сравнения.
+        """
+        if not isinstance(other, Events):
+            raise TypeError('Сравниваемый объект должен быть типа Events')
+        return self.events == other
+
+    def __hash__(self) -> int:
+        """Создаёт хэш из множества events.
+
+        Returns:
+            int: хэш.
+        """
+        return hash(self.events)
+
+
+class EventAnimationGroup:
+    """Класс группы EventAnimation."""
+
+    def __init__(self, *arg: EventsAnimation) -> None:
+        """Инициализирует группу EventAnimation."""
+        self._events_animations = {events_animation: events_animation for events_animation in arg}
+        if not self._events_animations[DEFAULT_EVENT]:
+            raise ValueError('Дефолтная анимация является обязательной.')
+
+    def __getitem__(self, key: Events) -> EventsAnimation:
+        """Отдаёт связь events и анимации по ключу.
+
+        Args:
+            key (Events): ключ events.
+
+        Returns:
+            EventsAnimation: связь events и анимации.
+        """
+        return self._events_animations[key]
+
+    def __iter__(self) -> Iterator:
+        """Итератор по объектам EventsAnimation.
+
+        Yields:
+            Iterator: итератор по объектам EventsAnimation.
+        """
+        return iter(self._events_animations.values())
 
 
 class AnimationGroup:
@@ -134,45 +189,53 @@ class AnimationGroup:
 
     def __init__(
         self,
-        events_animations: list[EventsAnimation],
-        default_animation: Animation,
+        events_animations: EventAnimationGroup,
     ) -> None:
         """Инициализация группы анимаций.
 
         Args:
-            events_animations (list[EventsAnimation]): список объектов EventsAnimation.
-            default_animation (Animation): дефолтная анимация.
+            events_animations (EventAnimationGroup): группа объектов EventsAnimation.
         """
         self._events_animations = events_animations
-        self._default_animation = EventsAnimation(DEFAULT_EVENT_ANIMATION, default_animation)
+        self._default_animation = events_animations[DEFAULT_EVENT]
         self._current_animation: EventsAnimation = self._default_animation
         self._old_current_animation: EventsAnimation = self._default_animation
 
-    def _check_events(self, events: tuple[int, ...]) -> bool:
+    def _check_events(self, events: Events, pressed: key.ScancodeWrapper) -> bool:
         """Проверка событий.
 
         Args:
-            events (tuple[int, ...]): события для проверки.
+            events (Events): события для проверки.
+            pressed (key.ScancodeWrapper): кортеж состояний кнопок.
 
         Returns:
             bool: флаг соответсвия событиям.
         """
-        if events == DEFAULT_EVENT_ANIMATION:
+        if events == DEFAULT_EVENT:
             return True
-        pressed = key.get_pressed()
         return all([pressed[event] for event in events])
 
-    def _check_old_current_animation(self) -> None:
-        """Проверка актуальности старой анимации."""
+    def _check_old_current_animation(self, pressed: key.ScancodeWrapper) -> None:
+        """Проверка актуальности старой анимации.
+
+        Args:
+            pressed (key.ScancodeWrapper): кортеж состояний кнопок.
+        """
         events = self._old_current_animation.events
-        if events == DEFAULT_EVENT_ANIMATION:
+        if events == DEFAULT_EVENT:
             return
-        if not self._check_events(events):
+        if not self._check_events(events, pressed):
             self._old_current_animation = self._default_animation
 
-    def _check_current_animation(self) -> None:
-        """Проверка актуальности текущей анимации."""
-        if not self._current_animation.animation.is_active or not self._check_events(self._current_animation.events):
+    def _check_current_animation(self, pressed: key.ScancodeWrapper) -> None:
+        """Проверка актуальности текущей анимации.
+
+        Args:
+            pressed (key.ScancodeWrapper): кортеж состояний кнопок.
+        """
+        if not self._current_animation.animation.is_active or not self._check_events(
+            self._current_animation.events, pressed
+        ):
             self._old_current_animation = self._current_animation
             self._current_animation.animation.stop()
             self._default_animation.animation.start()
@@ -194,10 +257,11 @@ class AnimationGroup:
 
     def events(self) -> None:
         """Проверка событий, совершённых пользователем."""
-        self._check_old_current_animation()
-        self._check_current_animation()
+        pressed = key.get_pressed()
+        self._check_old_current_animation(pressed)
+        self._check_current_animation(pressed)
         for events_animation in self._events_animations:
-            if self._check_events(events_animation.events):
+            if self._check_events(events_animation.events, pressed):
                 self._set_new_animations(events_animation)
                 break
 

@@ -25,7 +25,6 @@ class SetSettingsMixin:
     def _set_settings_animations(self) -> None:
         """Устанавливает настройки анимаций."""
         Animation.time_between_frames = self.settings['engine']['time_between_animation_frames']
-        Animation.audio_engine = self.audio
 
     def _set_settings(self) -> None:
         """Установка настроек игрового процесса."""

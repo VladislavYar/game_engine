@@ -1,9 +1,10 @@
 from pygame import mixer
 
 from engine.audio.constants import SoundsPathEnum
+from engine.metaclasses.singleton import SingletonMeta
 
 
-class Audio:
+class Audio(metaclass=SingletonMeta):
     """Класс управления звуками и музыкой."""
 
     def __init__(self) -> None:
