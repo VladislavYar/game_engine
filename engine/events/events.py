@@ -32,10 +32,10 @@ class Events:
         """
         return hash(self._events)
 
-    def __iter__(self) -> Iterator:
+    def __iter__(self) -> Iterator[int]:
         """Итератор по events.
 
         Yields:
-            Iterator: итератор по events.
+            Iterator[int]: итератор по events.
         """
         return iter(self._events)

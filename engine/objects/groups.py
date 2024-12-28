@@ -1,5 +1,6 @@
 from pygame.sprite import Group
-from pygame import key
+
+from engine.events import Pressed
 
 
 class BaseGroup(Group):
@@ -7,6 +8,6 @@ class BaseGroup(Group):
 
     def events(self, *args, **kwargs) -> None:
         """Запускает у объектов проверку событий."""
-        pressed = key.get_pressed()
+        pressed = Pressed()
         for sprite in self.sprites():
             sprite.events(pressed=pressed, *args, **kwargs)

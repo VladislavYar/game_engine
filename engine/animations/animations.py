@@ -3,13 +3,13 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Iterator
 
-from pygame import key, surface, time, image, rect, mask, SRCALPHA
+from pygame import surface, time, image, rect, mask, SRCALPHA
 
 from engine.utils.file import validate_format_file
 from engine.constants import BasePathEnum
 from engine.audio import Audio
 from engine.events.constants import DEFAULT_EVENT
-from engine.events import Events
+from engine.events import Events, Pressed
 
 
 @dataclass
@@ -41,7 +41,7 @@ class Animation:
     _no_frame: Frame = Frame(
         surface.Surface((0, 0), SRCALPHA),
         surface.Surface((0, 0), SRCALPHA).get_rect(),
-        surface.Surface((0, 0), SRCALPHA).get_masks(),
+        mask.from_surface(surface.Surface((0, 0), SRCALPHA)),
     )
 
     def __init__(self, dir: str | Path, is_loop: bool = False, sound: str | None = None) -> None:
@@ -92,9 +92,9 @@ class Animation:
         frames = []
         for img in images:
             img = image.load(img).convert_alpha()
-            rect = img.get_rect()
-            mask = img.get_masks()
-            frames.append(Frame(img, rect, mask))
+            img_rect = img.get_rect()
+            img_mask = mask.from_surface(img)
+            frames.append(Frame(img, img_rect, img_mask))
         if not len(frames):
             raise ValueError('Анимация должна содержать хотя бы один кадр.')
         return tuple(frames)
@@ -230,33 +230,33 @@ class AnimationGroup:
         self._default_animation = self._events_animations[DEFAULT_EVENT]
         self._current_animation = self._old_current_animation = self._default_animation
 
-    def _check_events(self, events: Events, pressed: key.ScancodeWrapper) -> bool:
+    def _check_events(self, events: Events, pressed: Pressed) -> bool:
         """Проверка событий.
 
         Args:
             events (Events): события для проверки.
-            pressed (key.ScancodeWrapper): кортеж состояний кнопок.
+            pressed (Pressed): объект состояния кнопок, коллизии и активности объекта.
 
         Returns:
             bool: флаг соответсвия событиям.
         """
         return events == DEFAULT_EVENT or all([pressed[event] for event in events])
 
-    def _check_old_current_animation(self, pressed: key.ScancodeWrapper) -> None:
+    def _check_old_current_animation(self, pressed: Pressed) -> None:
         """Проверка актуальности старой анимации.
 
         Args:
-            pressed (key.ScancodeWrapper): кортеж состояний кнопок.
+            pressed (Pressed): объект состояния кнопок, коллизии и активности объекта.
         """
         events = self._old_current_animation.events
         if events != DEFAULT_EVENT and not self._check_events(events, pressed):
             self._old_current_animation = self._default_animation
 
-    def _check_current_animation(self, pressed: key.ScancodeWrapper) -> None:
+    def _check_current_animation(self, pressed: Pressed) -> None:
         """Проверка актуальности текущей анимации.
 
         Args:
-            pressed (key.ScancodeWrapper): кортеж состояний кнопок.
+            pressed (Pressed): объект состояния кнопок, коллизии и активности объекта.
         """
         if not self._current_animation.animation.is_active or not self._check_events(
             self._current_animation.events, pressed
@@ -277,22 +277,22 @@ class AnimationGroup:
             self._current_animation = events_animation
             animation.start()
 
-    def _check_new_animation(self, pressed: key.ScancodeWrapper) -> None:
+    def _check_new_animation(self, pressed: Pressed) -> None:
         """Проверяет установку новой анимации.
 
         Args:
-            pressed (key.ScancodeWrapper): кортеж состояний кнопок.
+            pressed (Pressed): объект состояния кнопок, коллизии и активности объекта.
         """
         for events_animation in self._events_animations:
             if self._check_events(events_animation.events, pressed):
                 self._set_new_animations(events_animation)
                 break
 
-    def events(self, pressed: key.ScancodeWrapper) -> None:
+    def events(self, pressed: Pressed) -> None:
         """Проверка событий, совершённых пользователем.
 
         Args:
-            pressed (key.ScancodeWrapper): кортеж состояний кнопок.
+            pressed (Pressed): объект состояния кнопок, коллизии и активности объекта.
         """
         self._check_old_current_animation(pressed)
         self._check_current_animation(pressed)
