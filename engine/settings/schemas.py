@@ -6,12 +6,13 @@ from engine.settings.constants import (
     SCREEN_RESOLUTION_MESSAGE_ERROR,
     MAX_LEN_CAPTION_TITLE,
     DEFAULT_NAME_ICON,
+    BaseScreenSizeFrameEnum,
     TimeBetweenAnimationFrames,
     VolumeEnum,
     FPSEnum,
 )
 from engine.settings.types import TYPES_SETTINGS
-from engine.constants import BasePathEnum
+from engine.constants.path import BasePathEnum
 
 
 class BaseSettingsSchema(BaseModel):
@@ -124,6 +125,19 @@ class EngineSettingsSchema(BaseSettingsSchema):
         le=TimeBetweenAnimationFrames.MAX_TIME,
         description='Время между кадрами анимаций',
     )
+    base_screen_size_frame: ScreenResolutionShema = Field(
+        default_factory=lambda: EngineSettingsSchema.get_base_screen_size_frame(),
+        description='Базовое разрешение экрана расчёта размера фрейма',
+    )
+
+    @staticmethod
+    def get_base_screen_size_frame() -> ScreenResolutionShema:
+        """Отдаёт базовое значение разрешения экрана расчёта размера фрейма.
+
+        Returns:
+            ScreenResolutionShema: разрешение экрана.
+        """
+        return ScreenResolutionShema(width=BaseScreenSizeFrameEnum.WIDTH, height=BaseScreenSizeFrameEnum.HEIGHT)
 
     @field_validator('path_icon', mode='after')
     @classmethod

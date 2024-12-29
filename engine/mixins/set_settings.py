@@ -1,6 +1,8 @@
 import pygame
 
 from engine.animations import Animation
+from engine.animations.frames import Frame
+from engine.constants import Size
 
 
 class SetSettingsMixin:
@@ -27,6 +29,7 @@ class SetSettingsMixin:
     @classmethod
     def _set_settings_animations(cls) -> None:
         """Устанавливает настройки анимаций."""
+        Frame.base_screen_size = Size(*cls._settings['engine']['base_screen_size_frame'])
         Animation.time_between_frames = cls._settings['engine']['time_between_animation_frames']
 
     @classmethod

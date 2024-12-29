@@ -1,8 +1,10 @@
-from pygame import sprite, surface, mask as mk
+from pygame import sprite, mask as mk
 
 from engine.animations import AnimationGroup, EventsAnimationGroup
 from engine.objects.groups import BaseGroup
 from engine.events import Pressed
+from engine.constants import ZERO_COORDINATES
+from engine.constants.empty import EMPTY_FRAME
 
 
 class BaseObject(sprite.Sprite):
@@ -11,15 +13,16 @@ class BaseObject(sprite.Sprite):
     Attributes:
         _all_sprites (BaseGroup): группа всех спрайтов.
         events_animation_group (EventsAnimationGroup): группа событий и связанных с ними анимаций.
-        image (surface.Surface): начальное отображение объекта.
-        rect (rt.Rect): прямоугольник начального отображения объекта.
-        mask (mk.Mask): маска начального отображения объекта.
+        image (Surface): начальное отображение объекта.
+        rect (Rect): прямоугольник начального отображения объекта.
+        mask (Mask): маска начального отображения объекта.
     """
 
     _all_sprites = BaseGroup()
     events_animation_group: EventsAnimationGroup
-    image = surface.Surface((0, 0))
+    image = EMPTY_FRAME.image
     rect = image.get_rect()
+    rect.center = ZERO_COORDINATES
     mask = mk.from_surface(image)
 
     def __init__(self, *arg: BaseGroup) -> None:
@@ -38,10 +41,17 @@ class BaseObject(sprite.Sprite):
         pressed(self)
         self._animation_group.events(pressed)
 
-    def update(self) -> None:
-        """Логика обновления спрайта."""
+    def _new_frame(self) -> None:
+        """Устанавливает новый фрейм."""
         frame = self._animation_group.frame
         self.image = frame.image
         self.rect = frame.rect
         self.mask = frame.mask
-        self.rect.center = (500, 500)
+
+    def update(self) -> None:
+        """Логика обновления спрайта."""
+        self._new_frame()
+
+    def scale(self) -> None:
+        """Изменяет размер объекта под текущий размер экрана."""
+        self._animation_group.scale()

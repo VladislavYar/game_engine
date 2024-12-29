@@ -3,28 +3,15 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Iterator
 
-from pygame import surface, time, image, rect, mask, SRCALPHA
+from pygame import time, image, Surface
 
 from engine.utils.file import validate_format_file
-from engine.constants import BasePathEnum
+from engine.constants.path import BasePathEnum
 from engine.audio import Audio
 from engine.events.constants import DEFAULT_EVENT
 from engine.events import Events, Pressed
-
-
-@dataclass
-class Frame:
-    """Dataclass представляющий кадр анимации.
-
-    Attributes:
-        image (surface.Surface): изображение кадра анимации.
-        rect (rect.Rect): rect кадра анимации.
-        mask (mask.Mask): маска кадра анимации.
-    """
-
-    image: surface.Surface
-    rect: rect.Rect
-    mask: mask.Mask
+from engine.constants.empty import EMPTY_FRAME
+from engine.animations.frames import Frame
 
 
 class Animation:
@@ -33,16 +20,12 @@ class Animation:
     Attributes:
         time_between_frames (int): время между кадрами.
         _audio (Audio): объект для работы с аудио.
-        _no_frame (Frame): пустое отображение.
+        _empty_frame (Frame): пустое кадр.
     """
 
     time_between_frames: int
     _audio: Audio = Audio()
-    _no_frame: Frame = Frame(
-        surface.Surface((0, 0), SRCALPHA),
-        surface.Surface((0, 0), SRCALPHA).get_rect(),
-        mask.from_surface(surface.Surface((0, 0), SRCALPHA)),
-    )
+    _empty_frame: Frame = EMPTY_FRAME
 
     def __init__(self, dir: str | Path, is_loop: bool = False, sound: str | None = None) -> None:
         """Инициализация анимации.
@@ -92,12 +75,15 @@ class Animation:
         frames = []
         for img in images:
             img = image.load(img).convert_alpha()
-            img_rect = img.get_rect()
-            img_mask = mask.from_surface(img)
-            frames.append(Frame(img, img_rect, img_mask))
+            frames.append(Frame(img))
         if not len(frames):
             raise ValueError('Анимация должна содержать хотя бы один кадр.')
         return tuple(frames)
+
+    def scale(self) -> None:
+        """Изменяет размер кадров анимации под текущий размер экрана."""
+        for frame in self._frames:
+            frame.scale()
 
     def _set_default_values(self) -> None:
         """Устанавливает дефолтные значения."""
@@ -126,14 +112,14 @@ class Animation:
             self._set_default_values()
 
     @property
-    def frame(self) -> surface.Surface:
+    def frame(self) -> Surface:
         """Отдаёт следующий кадр анимации в зависимости от времени между кадрами.
 
         Returns:
-            surface.Surface: кадр анимации.
+            Surface: кадр анимации.
         """
         if not self.is_active:
-            return self._no_frame
+            return self._empty_frame
 
         if self._count_frames == 1:
             return self._frames[0]
@@ -149,7 +135,7 @@ class Animation:
             self._active_frame = self._count_frames // self._active_frame - 1
             if not self.is_loop:
                 self.stop()
-                return self._no_frame
+                return self._empty_frame
         return frame
 
 
@@ -205,7 +191,7 @@ class EventsAnimationGroup:
         """
         return self._events_animations.get(key)
 
-    def __iter__(self) -> Iterator:
+    def __iter__(self) -> Iterator[EventsAnimation]:
         """Итератор по объектам EventsAnimation.
 
         Yields:
@@ -297,6 +283,11 @@ class AnimationGroup:
         self._check_old_current_animation(pressed)
         self._check_current_animation(pressed)
         self._check_new_animation(pressed)
+
+    def scale(self) -> None:
+        """Изменяет размер кадров анимаций под текущий размер экрана."""
+        for events_animation in self._events_animations:
+            events_animation.animation.scale()
 
     @property
     def frame(self) -> Frame:

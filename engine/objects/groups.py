@@ -11,3 +11,8 @@ class BaseGroup(Group):
         pressed = Pressed()
         for sprite in self.sprites():
             sprite.events(pressed=pressed, *args, **kwargs)
+
+    def scale(self, *args, **kwargs) -> None:
+        """Изменяет размер объектов под текущий размер экрана."""
+        for sprite in self.sprites():
+            sprite.scale(*args, **kwargs)

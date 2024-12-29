@@ -1,6 +1,6 @@
 from enum import Enum
 
-from engine.constants import BasePathEnum
+from engine.constants.path import BasePathEnum
 
 
 class SoundsPathEnum(Enum):

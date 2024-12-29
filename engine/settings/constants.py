@@ -1,15 +1,7 @@
 from enum import IntEnum, Enum
 
-from engine.constants import BasePathEnum
+from engine.constants.path import BasePathEnum
 
-
-COEFS_SCREEN = {
-    2560: 1,
-    1920: 1.33,
-    1600: 1.6,
-    1366: 1.874,
-    1280: 2,
-}
 
 SCREEN_RESOLUTIONS = (
     (1280, 720),
@@ -61,3 +53,10 @@ class FPSEnum(IntEnum):
 
     MAX_FPS = 300
     MIN_FPS = 30
+
+
+class BaseScreenSizeFrameEnum(IntEnum):
+    """Enum базового размера расчёта фрейма."""
+
+    WIDTH = 1280
+    HEIGHT = 720
