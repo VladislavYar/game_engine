@@ -5,7 +5,7 @@ from engine.mixins import QuitMixin, SetSettingsMixin
 from engine.settings import Settings
 from engine.audio import Audio
 from engine.metaclasses.engine import EngineMeta
-from engine.objects.base_object import BaseObject
+from engine.objects.groups import AllObjectsGroup
 
 
 class Engine(QuitMixin, SetSettingsMixin, metaclass=EngineMeta):
@@ -15,11 +15,13 @@ class Engine(QuitMixin, SetSettingsMixin, metaclass=EngineMeta):
         _clock (time.Clock): объект часов игрового процесса.
         _audio (Audio): объект для работы с аудио.
         _settings (Settings): объект настроек игрового процесса.
+        _all_objects_group (AllObjectsGroup): группа всех игровых объектов.
     """
 
     _clock: time.Clock = time.Clock()
     _audio: Audio = Audio()
     _settings: Settings = Settings()
+    _all_objects_group: AllObjectsGroup = AllObjectsGroup()
 
     def _get_events(self) -> dict[int, event.Event]:
         """Отдаёт события в виде словаря.
@@ -33,16 +35,16 @@ class Engine(QuitMixin, SetSettingsMixin, metaclass=EngineMeta):
         """Проверка событий, совершённых пользователем."""
         events = self._get_events()
         self._check_quit(events)
-        BaseObject._all_sprites.events()
+        self._all_objects_group.events()
 
     def _update(self) -> None:
         """Обновление объектов."""
-        BaseObject._all_sprites.update()
+        self._all_objects_group.update()
 
     def _draw(self) -> None:
         """Вывод элемекнтов на дисплей."""
         self.display.fill(pygame.Color('black'))
-        BaseObject._all_sprites.draw(self.display)
+        self._all_objects_group.draw(self.display)
         display.flip()
 
     def _main_loop(self) -> None:

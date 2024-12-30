@@ -2,7 +2,7 @@ from pygame import sprite, mask as mk
 
 from engine.animations import AnimationGroup, EventsAnimationGroup
 from engine.actions import EventsActionGroup, ActionGroup
-from engine.objects.groups import BaseGroup
+from engine.objects.groups import AllObjectsGroup, BaseGroup
 from engine.events import Pressed
 from engine.constants import ZERO_COORDINATES
 from engine.constants.empty import EMPTY_FRAME
@@ -12,7 +12,7 @@ class BaseObject(sprite.Sprite):
     """Базовый объект игровог процесса.
 
     Attributes:
-        _all_sprites (BaseGroup): группа всех спрайтов.
+        _all_objects_group (AllObjectsGroup): группа всех игровых объектов.
         events_animation_group (EventsAnimationGroup): группа событий и связанных с ними анимаций.
         events_action_group (EventsActionGroup): группа событий и связанных с ними действий.
         image (Surface): начальное отображение объекта.
@@ -20,7 +20,7 @@ class BaseObject(sprite.Sprite):
         mask (Mask): маска начального отображения объекта.
     """
 
-    _all_sprites = BaseGroup()
+    _all_objects_group = AllObjectsGroup()
     events_animation_group: EventsAnimationGroup
     events_action_group: EventsActionGroup
     image = EMPTY_FRAME.image
@@ -30,7 +30,7 @@ class BaseObject(sprite.Sprite):
 
     def __init__(self, *arg: BaseGroup) -> None:
         """Инициализация базового объекта."""
-        super().__init__(self._all_sprites, *arg)
+        super().__init__(self._all_objects_group, *arg)
         self._animation_group = AnimationGroup(events_animations=self.events_animation_group)
         self._actions_group = ActionGroup(events_actions=self.events_action_group, obj=self)
         self.inactive = False

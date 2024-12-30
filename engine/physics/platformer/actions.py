@@ -13,7 +13,7 @@ class Test2(Action):
 
 class Test3(Action):
     def perform(self, obj):
-        obj.rect.y -= 1
+        obj.rect.y -= 2
 
 
 class Test4(Action):
