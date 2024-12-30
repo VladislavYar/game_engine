@@ -12,6 +12,7 @@ from engine.events.constants import DEFAULT_EVENT
 from engine.events import Events, Pressed
 from engine.constants.empty import EMPTY_FRAME
 from engine.animations.frames import Frame
+from engine.utils.events import check_events
 
 
 class Animation:
@@ -216,18 +217,6 @@ class AnimationGroup:
         self._default_animation = self._events_animations[DEFAULT_EVENT]
         self._current_animation = self._old_current_animation = self._default_animation
 
-    def _check_events(self, events: Events, pressed: Pressed) -> bool:
-        """Проверка событий.
-
-        Args:
-            events (Events): события для проверки.
-            pressed (Pressed): объект состояния кнопок, коллизии и активности объекта.
-
-        Returns:
-            bool: флаг соответсвия событиям.
-        """
-        return events == DEFAULT_EVENT or all([pressed[event] for event in events])
-
     def _check_old_current_animation(self, pressed: Pressed) -> None:
         """Проверка актуальности старой анимации.
 
@@ -235,7 +224,7 @@ class AnimationGroup:
             pressed (Pressed): объект состояния кнопок, коллизии и активности объекта.
         """
         events = self._old_current_animation.events
-        if events != DEFAULT_EVENT and not self._check_events(events, pressed):
+        if events != DEFAULT_EVENT and not check_events(events, pressed):
             self._old_current_animation = self._default_animation
 
     def _check_current_animation(self, pressed: Pressed) -> None:
@@ -244,7 +233,7 @@ class AnimationGroup:
         Args:
             pressed (Pressed): объект состояния кнопок, коллизии и активности объекта.
         """
-        if not self._current_animation.animation.is_active or not self._check_events(
+        if not self._current_animation.animation.is_active or not check_events(
             self._current_animation.events, pressed
         ):
             self._current_animation.animation.stop()
@@ -270,7 +259,7 @@ class AnimationGroup:
             pressed (Pressed): объект состояния кнопок, коллизии и активности объекта.
         """
         for events_animation in self._events_animations:
-            if self._check_events(events_animation.events, pressed):
+            if check_events(events_animation.events, pressed):
                 self._set_new_animations(events_animation)
                 break
 

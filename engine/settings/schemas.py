@@ -6,7 +6,7 @@ from engine.settings.constants import (
     SCREEN_RESOLUTION_MESSAGE_ERROR,
     MAX_LEN_CAPTION_TITLE,
     DEFAULT_NAME_ICON,
-    BaseScreenSizeFrameEnum,
+    BASE_SCREEN_SIZE_FRAME,
     TimeBetweenAnimationFrames,
     VolumeEnum,
     FPSEnum,
@@ -137,7 +137,7 @@ class EngineSettingsSchema(BaseSettingsSchema):
         Returns:
             ScreenResolutionShema: разрешение экрана.
         """
-        return ScreenResolutionShema(width=BaseScreenSizeFrameEnum.WIDTH, height=BaseScreenSizeFrameEnum.HEIGHT)
+        return ScreenResolutionShema(width=BASE_SCREEN_SIZE_FRAME.width, height=BASE_SCREEN_SIZE_FRAME.height)
 
     @field_validator('path_icon', mode='after')
     @classmethod

@@ -2,17 +2,21 @@ from enum import IntEnum, Enum
 
 from engine.constants.path import BasePathEnum
 
+from engine.constants import Size
+
+
+BASE_SCREEN_SIZE_FRAME = Size(1280, 720)
 
 SCREEN_RESOLUTIONS = (
-    (1280, 720),
-    (1366, 768),
-    (1600, 900),
-    (1920, 1080),
-    (2160, 1080),
-    (2560, 1440),
-    (2960, 1440),
-    (3200, 1800),
-    (3840, 2160),
+    Size(1280, 720),
+    Size(1366, 768),
+    Size(1600, 900),
+    Size(1920, 1080),
+    Size(2160, 1080),
+    Size(2560, 1440),
+    Size(2960, 1440),
+    Size(3200, 1800),
+    Size(3840, 2160),
 )
 
 SCREEN_RESOLUTION_MESSAGE_ERROR = 'Разрешение экрана {}x{} не поддерживается'
@@ -53,10 +57,3 @@ class FPSEnum(IntEnum):
 
     MAX_FPS = 300
     MIN_FPS = 30
-
-
-class BaseScreenSizeFrameEnum(IntEnum):
-    """Enum базового размера расчёта фрейма."""
-
-    WIDTH = 1280
-    HEIGHT = 720
