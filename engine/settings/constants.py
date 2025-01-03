@@ -5,7 +5,7 @@ from engine.constants.path import BasePathEnum
 from engine.constants import Size
 
 
-BASE_SCREEN_SIZE_FRAME = Size(1280, 720)
+BASE_SCREEN_SIZE_FRAME = BASE_SCREEN_SIZE_ACTION = Size(1280, 720)
 
 SCREEN_RESOLUTIONS = (
     Size(1280, 720),
@@ -32,7 +32,15 @@ class TimeBetweenAnimationFrames(IntEnum):
     """Enum промежуток времени между кадрами."""
 
     DEFAULT_TIME = 150
-    MIN_TIME = 10
+    MIN_TIME = 1
+    MAX_TIME = 1000
+
+
+class TimeBetweenAnimationActions(IntEnum):
+    """Enum промежуток времени между действиями."""
+
+    DEFAULT_TIME = 50
+    MIN_TIME = 1
     MAX_TIME = 1000
 
 

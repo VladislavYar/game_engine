@@ -1,4 +1,4 @@
-from engine.actions.actions import EventsActionGroup, ActionGroup, Action, EventsAction
+from engine.actions.actions import EventsActionGroup, ActionGroup, Action, EventsAction, DynamicAction
 
 
 __all__ = (
@@ -6,4 +6,5 @@ __all__ = (
     'ActionGroup',
     'Action',
     'EventsAction',
+    'DynamicAction',
 )

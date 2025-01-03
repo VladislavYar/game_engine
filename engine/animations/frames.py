@@ -1,12 +1,28 @@
 from functools import lru_cache
+from typing import Callable
 
-from pygame import display, transform, Surface, mask
+from pygame import transform, Surface, mask
 
 from engine.constants import Size
+from engine.utils.screen import get_sreen_resolution
+from engine.constants.direction import DirectionGroupEnum
 
 
 class BaseFrame:
-    """Класс представляющий базовый кадр."""
+    """Класс представляющий базовый кадр.
+
+    Attributes:
+        _map_flip_by_derection: (dict[DirectionGroupEnum | None, Callable]):
+            словарь - направления и функция переворота изображения.
+    """
+
+    _map_flip_by_derection: dict[DirectionGroupEnum | None, Callable] = {
+        None: lambda image: image,
+        DirectionGroupEnum.RIGHT: lambda image: image,
+        DirectionGroupEnum.UP: lambda image: image,
+        DirectionGroupEnum.LEFT: lambda image: transform.flip(image, True, False),
+        DirectionGroupEnum.DOWN: lambda image: transform.flip(image, False, True),
+    }
 
     def __init__(self, image: Surface) -> None:
         """Инициализация базового кадра.
@@ -17,6 +33,7 @@ class BaseFrame:
         self._set_data_frame(image)
         self._original_image = image
         self._original_size = Size(self.rect.size[0], self.rect.size[1])
+        self.direction = None
         self.scale()
 
     def _set_data_frame(self, image: Surface) -> None:
@@ -25,12 +42,21 @@ class BaseFrame:
         Args:
             image (Surface): изображение кадра анимации.
         """
-        self.image = image
+        self._image = image
         self.rect = image.get_rect()
         self.mask = mask.from_surface(image)
 
     def scale(self) -> None:
         """Изменяет размер кадра анимации под текущий размер экрана."""
+
+    @property
+    def image(self) -> Surface:
+        """Getter изображения.
+
+        Returns:
+            Surface: изображение.
+        """
+        return self._map_flip_by_derection[self.direction](self._image)
 
 
 class EmptyFrame(BaseFrame):
@@ -45,15 +71,6 @@ class Frame(BaseFrame):
     """
 
     base_screen_size: Size
-
-    def _get_sreen_resolution(self) -> tuple[int, int]:
-        """Отдаёт текущее разрешение экрана.
-
-        Returns:
-            tuple[int, int]: ширина и высота разрешения экрана.
-        """
-        display_info = display.Info()
-        return display_info.current_w, display_info.current_h
 
     @classmethod
     @lru_cache
@@ -70,6 +87,6 @@ class Frame(BaseFrame):
 
     def scale(self) -> None:
         """Изменяет размер кадра анимации под текущий размер экрана."""
-        coef_width, coef_height = self._get_coef(*self._get_sreen_resolution())
+        coef_width, coef_height = self._get_coef(*get_sreen_resolution())
         size = Size(self._original_size.width * coef_width, self._original_size.height * coef_height)
         self._set_data_frame(transform.scale(self._original_image.copy(), size))

@@ -1,21 +1,26 @@
-from engine.actions import Action
+from engine.constants.direction import DirectionGroupEnum
+from engine.physics.actions import WalkAction, RunAction
 
 
-class Test1(Action):
-    def perform(self, obj):
-        obj.rect.x += 1
+class WalkLeftAction(WalkAction):
+    """Ходьба влево."""
+
+    direction_movement = DirectionGroupEnum.LEFT
 
 
-class Test2(Action):
-    def perform(self, obj):
-        obj.rect.x -= 1
+class WalkRightAction(WalkAction):
+    """Ходьба вправо."""
+
+    direction_movement = DirectionGroupEnum.RIGHT
 
 
-class Test3(Action):
-    def perform(self, obj):
-        obj.rect.y -= 2
+class RunLeftAction(RunAction):
+    """Бег влево."""
+
+    direction_movement = DirectionGroupEnum.LEFT
 
 
-class Test4(Action):
-    def perform(self, obj):
-        obj.rect.y += 1
+class RunRightAction(RunAction):
+    """Бег вправо."""
+
+    direction_movement = DirectionGroupEnum.RIGHT

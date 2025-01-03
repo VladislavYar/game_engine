@@ -1,24 +1,25 @@
 import pygame
-from pygame import event, display, time
+from pygame import event, display
 
 from engine.mixins import QuitMixin, SetSettingsMixin
 from engine.settings import Settings
 from engine.audio import Audio
 from engine.metaclasses.engine import EngineMeta
 from engine.objects.groups import AllObjectsGroup
+from engine.time import GlobalClock
 
 
 class Engine(QuitMixin, SetSettingsMixin, metaclass=EngineMeta):
     """Игровой движок.
 
     Attributes:
-        _clock (time.Clock): объект часов игрового процесса.
+        _global_clock (GlobalClock): объект глобальных часов игрового процесса.
         _audio (Audio): объект для работы с аудио.
         _settings (Settings): объект настроек игрового процесса.
         _all_objects_group (AllObjectsGroup): группа всех игровых объектов.
     """
 
-    _clock: time.Clock = time.Clock()
+    _global_clock: GlobalClock = GlobalClock()
     _audio: Audio = Audio()
     _settings: Settings = Settings()
     _all_objects_group: AllObjectsGroup = AllObjectsGroup()
@@ -53,7 +54,7 @@ class Engine(QuitMixin, SetSettingsMixin, metaclass=EngineMeta):
             self._events()
             self._update()
             self._draw()
-            self._clock.tick(self._settings['graphics']['max_fps'])
+            self._global_clock.tick(self._settings['graphics']['max_fps'])
 
     def start(self) -> None:
         """Запуск игрового процесса."""

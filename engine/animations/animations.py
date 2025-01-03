@@ -1,9 +1,9 @@
 import os
 from pathlib import Path
 from dataclasses import dataclass
-from typing import Iterator
+from typing import Iterator, TYPE_CHECKING
 
-from pygame import time, image, Surface
+from pygame import image, transform
 
 from engine.utils.file import validate_format_file
 from engine.constants.path import BasePathEnum
@@ -13,33 +13,53 @@ from engine.events import Events, Pressed
 from engine.constants.empty import EMPTY_FRAME
 from engine.animations.frames import Frame
 from engine.utils.events import check_events
+from engine.mixins.management import ManagementMixin
+from engine.animations.constants import OBJ_WRITING_ONLY
+
+if TYPE_CHECKING:
+    from engine.objects import BaseObject
 
 
-class Animation:
+class Animation(ManagementMixin):
     """Класс представляющий анимацию.
 
     Attributes:
-        time_between_frames (int): время между кадрами.
+        time_between (int): время между кадрами.
         _audio (Audio): объект для работы с аудио.
         _empty_frame (Frame): пустое кадр.
     """
 
-    time_between_frames: int
+    time_between: int
     _audio: Audio = Audio()
     _empty_frame: Frame = EMPTY_FRAME
 
-    def __init__(self, dir: str | Path, is_loop: bool = False, sound: str | None = None) -> None:
+    def __init__(
+        self,
+        dir: str | Path,
+        is_loop: bool = False,
+        sound: str | None = None,
+        time_between: int | None = None,
+        flip_x: bool = False,
+        flip_y: bool = False,
+        flip_by_derection: bool = False,
+    ) -> None:
         """Инициализация анимации.
 
         Args:
             dir (str): директорию анимации.
-            is_loop (bool): зацикленная анимация. По дефолту False.
-            sound (str | None): название файла аудио анимации. По дефолту None.
+            is_loop (bool, optional): зацикленная анимация. По дефолту False.
+            sound (str | None, optional): название файла аудио анимации. По дефолту None.
+            time_between (int | None, optional): Время между кадрами фрейма. По дефолту None.
+            flip_x (bool, optional): Флаг отражения по горизонтале. По дефолту False.
+            flip_y (bool, optional): Флаг отражения по вертикале. По дефолту False.
+            flip_by_derection (bool, optional): Флаг поворота анимации по направлению движения. По дефолту False.
         """
         path = BasePathEnum.ANIMATIONS_PATH.value / dir
         images = self._get_full_path_images(path)
-        self._frames = self._get_frames(images)
+        self._frames = self._get_frames(images, flip_x, flip_y)
         self.is_loop = is_loop
+        self._flip_by_derection = flip_by_derection
+        self.time_between = time_between if time_between else self.time_between
         self._sound = self._audio.load_effect(sound) if sound else None
         self._count_frames = len(self._frames)
         self._set_default_values()
@@ -61,11 +81,13 @@ class Animation:
                 images.append(full_path)
         return images
 
-    def _get_frames(self, images: list[str]) -> tuple[Frame]:
+    def _get_frames(self, images: list[str], flip_x: bool, flip_y: bool) -> tuple[Frame]:
         """Отдаёт список кадров.
 
         Args:
             images (list[str]): пути до изображений.
+            flip_x (bool): Флаг отражения по горизонтале.
+            flip_y (bool): Флаг отражения по вертикале.
 
         Raises:
             ValueError: ошибка валидации при отсутвии кадров.
@@ -75,10 +97,8 @@ class Animation:
         """
         frames = []
         for img in images:
-            img = image.load(img).convert_alpha()
+            img = transform.flip(image.load(img).convert_alpha(), flip_x, flip_y)
             frames.append(Frame(img))
-        if not len(frames):
-            raise ValueError('Анимация должна содержать хотя бы один кадр.')
         return tuple(frames)
 
     def scale(self) -> None:
@@ -86,58 +106,56 @@ class Animation:
         for frame in self._frames:
             frame.scale()
 
-    def _set_default_values(self) -> None:
-        """Устанавливает дефолтные значения."""
-        self._active_frame = 0
-        self._elapsed = 0
-        self._ticks = time.get_ticks()
-        self.is_active = False
-        if self._sound and self.is_loop:
-            self._sound.stop()
+    def _get_rotation_frame(self, index: int) -> Frame:
+        """Отдаёт frame анимации с проверкой на поворот.
 
-    def restart(self) -> None:
-        """Перезапускает анимацию."""
-        self._set_default_values()
-        self.is_active = True
-        if self._sound:
-            self._sound.play(loops=-1 if self.is_loop else 0)
-
-    def start(self) -> None:
-        """Запускает анимацию, если не активна."""
-        if not self.is_active:
-            self.restart()
-
-    def stop(self) -> None:
-        """Останавливает анимацию, если активна."""
-        if self.is_active:
-            self._set_default_values()
-
-    @property
-    def frame(self) -> Surface:
-        """Отдаёт следующий кадр анимации в зависимости от времени между кадрами.
+        Args:
+            images (int): индекс frame.
 
         Returns:
-            Surface: кадр анимации.
+            Frame: frame анимации.
         """
-        if not self.is_active:
+        frame = self._frames[index]
+        if self._flip_by_derection:
+            frame.direction = self._obj.direction
+        return frame
+
+    @property
+    def frame(self) -> Frame:
+        """Отдаёт следующий кадр анимации в зависимости от времени между кадрами.
+
+        Args:
+            obj (BaseObject): игровой объект.
+
+        Returns:
+            Frame: кадр анимации.
+        """
+        if not self.is_active or not len(self._frames):
             return self._empty_frame
 
         if self._count_frames == 1:
-            return self._frames[0]
+            return self._get_rotation_frame(0)
 
-        frame = self._frames[self._active_frame]
-        self._elapsed += time.get_ticks() - self._ticks
-        self._ticks = time.get_ticks()
-        if self._elapsed < self.time_between_frames:
-            return frame
-        self._active_frame += self._elapsed // self.time_between_frames
-        self._elapsed = self._elapsed % self.time_between_frames
+        frame_shift, self._elapsed = self._update_elapsed()
+        self._active_frame += frame_shift
         if self._active_frame >= self._count_frames:
             self._active_frame = self._count_frames // self._active_frame - 1
             if not self.is_loop:
                 self.stop()
                 return self._empty_frame
-        return frame
+        return self._get_rotation_frame(self._active_frame)
+
+    @property
+    def obj(self) -> None:
+        raise OBJ_WRITING_ONLY
+
+    @obj.setter
+    def obj(self, obj: 'BaseObject') -> None:
+        """Добавляет игровой объект анимации.
+        Args:
+            obj (BaseObject): игровой объект.
+        """
+        self._obj = obj
 
 
 @dataclass
@@ -207,15 +225,19 @@ class AnimationGroup:
     def __init__(
         self,
         events_animations: EventsAnimationGroup,
+        obj: 'BaseObject',
     ) -> None:
         """Инициализация группы анимаций.
 
         Args:
             events_animations (EventsAnimationGroup): группа объектов EventsAnimation.
+            obj (BaseObject): игровой объект.
         """
         self._events_animations = events_animations
         self._default_animation = self._events_animations[DEFAULT_EVENT]
         self._current_animation = self._old_current_animation = self._default_animation
+        for events_animation in self._events_animations:
+            events_animation.animation.obj = obj
 
     def _check_old_current_animation(self, pressed: Pressed) -> None:
         """Проверка актуальности старой анимации.

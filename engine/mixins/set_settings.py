@@ -2,6 +2,7 @@ import pygame
 
 from engine.animations import Animation
 from engine.animations.frames import Frame
+from engine.actions import DynamicAction, Action
 from engine.constants import Size
 
 
@@ -30,7 +31,13 @@ class SetSettingsMixin:
     def _set_settings_animations(cls) -> None:
         """Устанавливает настройки анимаций."""
         Frame.base_screen_size = Size(*cls._settings['engine']['base_screen_size_frame'])
-        Animation.time_between_frames = cls._settings['engine']['time_between_animation_frames']
+        Animation.time_between = cls._settings['engine']['time_between_animation_frames']
+
+    @classmethod
+    def _set_settings_actions(cls) -> None:
+        """Устанавливает настройки действий."""
+        Action.time_between = cls._settings['engine']['time_between_animation_actions']
+        DynamicAction.base_screen_size = Size(*cls._settings['engine']['base_screen_size_action'])
 
     @classmethod
     def _set_settings(cls) -> None:
@@ -38,3 +45,4 @@ class SetSettingsMixin:
         cls._set_settings_display()
         cls._set_settings_audio()
         cls._set_settings_animations()
+        cls._set_settings_actions()

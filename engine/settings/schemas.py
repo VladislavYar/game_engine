@@ -7,6 +7,8 @@ from engine.settings.constants import (
     MAX_LEN_CAPTION_TITLE,
     DEFAULT_NAME_ICON,
     BASE_SCREEN_SIZE_FRAME,
+    BASE_SCREEN_SIZE_ACTION,
+    TimeBetweenAnimationActions,
     TimeBetweenAnimationFrames,
     VolumeEnum,
     FPSEnum,
@@ -125,9 +127,19 @@ class EngineSettingsSchema(BaseSettingsSchema):
         le=TimeBetweenAnimationFrames.MAX_TIME,
         description='Время между кадрами анимаций',
     )
+    time_between_animation_actions: int = Field(
+        default=TimeBetweenAnimationActions.DEFAULT_TIME,
+        ge=TimeBetweenAnimationActions.MIN_TIME,
+        le=TimeBetweenAnimationActions.MAX_TIME,
+        description='Время между действиями',
+    )
     base_screen_size_frame: ScreenResolutionShema = Field(
         default_factory=lambda: EngineSettingsSchema.get_base_screen_size_frame(),
         description='Базовое разрешение экрана расчёта размера фрейма',
+    )
+    base_screen_size_action: ScreenResolutionShema = Field(
+        default_factory=lambda: EngineSettingsSchema.get_base_screen_size_action(),
+        description='Базовое разрешение экрана расчёта скорости действия',
     )
 
     @staticmethod
@@ -138,6 +150,15 @@ class EngineSettingsSchema(BaseSettingsSchema):
             ScreenResolutionShema: разрешение экрана.
         """
         return ScreenResolutionShema(width=BASE_SCREEN_SIZE_FRAME.width, height=BASE_SCREEN_SIZE_FRAME.height)
+
+    @staticmethod
+    def get_base_screen_size_action() -> ScreenResolutionShema:
+        """Отдаёт базовое значение разрешения экрана расчёта скорости действия.
+
+        Returns:
+            ScreenResolutionShema: разрешение экрана.
+        """
+        return ScreenResolutionShema(width=BASE_SCREEN_SIZE_ACTION.width, height=BASE_SCREEN_SIZE_ACTION.height)
 
     @field_validator('path_icon', mode='after')
     @classmethod

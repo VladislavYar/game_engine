@@ -6,7 +6,7 @@ from engine.metaclasses.singleton import PressedSingletonMeta
 from engine.events.constants import EventEnum
 
 if TYPE_CHECKING:
-    from engine.objects.base_object import BaseObject
+    from engine.objects import BaseObject
 
 
 class Pressed(metaclass=PressedSingletonMeta):
@@ -37,8 +37,8 @@ class Pressed(metaclass=PressedSingletonMeta):
             obj (BaseObject): игровой объект.
         """
         self._collision_mos = self._check_collision_mos(obj)
-        self._inactive = obj.inactive
-        self._focus = obj.focus
+        self._inactive = obj.status.inactive
+        self._focus = obj.status.focus
 
     def _check_collision_mos(self, obj: 'BaseObject') -> bool:
         """Проверка коллизии мышки с маской.

@@ -21,3 +21,11 @@ class BaseGroup(Group, metaclass=SingletonMeta):
 
 class AllObjectsGroup(BaseGroup):
     """Группа всех объектов."""
+
+
+class SolidObjectsGroup(BaseGroup):
+    """Группа твёрдых объектов."""
+
+
+class DynamicObjectsGroup(BaseGroup):
+    """Группа динамических объектов."""
