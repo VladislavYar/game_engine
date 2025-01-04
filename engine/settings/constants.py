@@ -5,8 +5,6 @@ from engine.constants.path import BasePathEnum
 from engine.constants import Size
 
 
-BASE_SCREEN_SIZE_FRAME = BASE_SCREEN_SIZE_ACTION = Size(1280, 720)
-
 SCREEN_RESOLUTIONS = (
     Size(1280, 720),
     Size(1366, 768),
@@ -19,6 +17,10 @@ SCREEN_RESOLUTIONS = (
     Size(3840, 2160),
 )
 
+BASE_SCREEN_SIZE_FRAME = BASE_SCREEN_SIZE_ACTION = SCREEN_RESOLUTIONS[0]
+
+BASE_VISIBLE_MAP_SIZE = SCREEN_RESOLUTIONS[-1]
+
 SCREEN_RESOLUTION_MESSAGE_ERROR = 'Разрешение экрана {}x{} не поддерживается'
 
 MAX_LEN_CAPTION_TITLE = 120
@@ -28,7 +30,7 @@ DEFAULT_NAME_ICON = 'icon.ico'
 ENCODING = 'utf-8'
 
 
-class TimeBetweenAnimationFrames(IntEnum):
+class TimeBetweenAnimationFramesEnum(IntEnum):
     """Enum промежуток времени между кадрами."""
 
     DEFAULT_TIME = 150
@@ -36,12 +38,30 @@ class TimeBetweenAnimationFrames(IntEnum):
     MAX_TIME = 1000
 
 
-class TimeBetweenAnimationActions(IntEnum):
+class TimeBetweenAnimationActionsEnum(IntEnum):
     """Enum промежуток времени между действиями."""
 
     DEFAULT_TIME = 50
     MIN_TIME = 1
     MAX_TIME = 1000
+
+
+class RectOutlineWidthEnum(IntEnum):
+    """Enum ширины обводки rect."""
+
+    DEFAULT_WIDTH = 3
+    MIN_WIDTH = 0
+    MAX_WIDTH = 10
+
+
+class RGBColorEnum(IntEnum):
+    """Enum RGB цвета."""
+
+    DEFAULT_RED = 255
+    DEFAULT_GREEN = DEFAULT_RED
+    DEFAULT_BLUE = DEFAULT_GREEN
+    MIN_COLOR = 0
+    MAX_COLOR = 255
 
 
 class SettingsFilesPathEnum(Enum):

@@ -3,7 +3,7 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Iterator, TYPE_CHECKING
 
-from pygame import image, transform
+from pygame import image, transform, Surface
 
 from engine.utils.file import validate_format_file
 from engine.constants.path import BasePathEnum
@@ -14,7 +14,8 @@ from engine.constants.empty import EMPTY_FRAME
 from engine.animations.frames import Frame
 from engine.utils.events import check_events
 from engine.mixins.management import ManagementMixin
-from engine.animations.constants import OBJ_WRITING_ONLY
+from engine.constants import WRITING_ONLY
+from engine.settings import Settings
 
 if TYPE_CHECKING:
     from engine.objects import BaseObject
@@ -24,14 +25,18 @@ class Animation(ManagementMixin):
     """Класс представляющий анимацию.
 
     Attributes:
-        time_between (int): время между кадрами.
+        _settings (Settings): объект настроек игрового процесса.
         _audio (Audio): объект для работы с аудио.
         _empty_frame (Frame): пустое кадр.
+        _images (dict[str, Surface]): словарь отношения путь - загруженное изображение.
+        time_between (int): время между кадрами.
     """
 
-    time_between: int
+    _settings: Settings = Settings()
     _audio: Audio = Audio()
     _empty_frame: Frame = EMPTY_FRAME
+    _images: dict[str, Surface] = {}
+    time_between: int = _settings['engine']['time_between_animation_frames']
 
     def __init__(
         self,
@@ -55,8 +60,8 @@ class Animation(ManagementMixin):
             flip_by_derection (bool, optional): Флаг поворота анимации по направлению движения. По дефолту False.
         """
         path = BasePathEnum.ANIMATIONS_PATH.value / dir
-        images = self._get_full_path_images(path)
-        self._frames = self._get_frames(images, flip_x, flip_y)
+        path_images = self._get_full_path_images(path)
+        self._frames = self._get_frames(path_images, flip_x, flip_y)
         self.is_loop = is_loop
         self._flip_by_derection = flip_by_derection
         self.time_between = time_between if time_between else self.time_between
@@ -73,19 +78,34 @@ class Animation(ManagementMixin):
         Returns:
             list[str]: список полных путей до изображений.
         """
-        images = []
+        path_images = []
         for file in os.listdir(path):
             full_path = os.path.join(path, file)
             if not os.path.isdir(full_path):
                 validate_format_file(file, ('png',))
-                images.append(full_path)
-        return images
+                path_images.append(full_path)
+        return path_images
 
-    def _get_frames(self, images: list[str], flip_x: bool, flip_y: bool) -> tuple[Frame]:
+    def _get_image(self, path_image: str) -> Surface:
+        """Отдаёт изображение.
+
+        Args:
+            path_image (str): путь до изображения.
+
+        Returns:
+            Surface: изображение.
+        """
+        if img := self._images.get(path_image):
+            return img.copy()
+        img = image.load(path_image).convert_alpha()
+        self._images[path_image] = img
+        return img
+
+    def _get_frames(self, path_images: list[str], flip_x: bool, flip_y: bool) -> tuple[Frame]:
         """Отдаёт список кадров.
 
         Args:
-            images (list[str]): пути до изображений.
+            path_images (list[str]): пути до изображений.
             flip_x (bool): Флаг отражения по горизонтале.
             flip_y (bool): Флаг отражения по вертикале.
 
@@ -96,8 +116,8 @@ class Animation(ManagementMixin):
             tuple[Frame]: список кадров.
         """
         frames = []
-        for img in images:
-            img = transform.flip(image.load(img).convert_alpha(), flip_x, flip_y)
+        for path_image in path_images:
+            img = transform.flip(self._get_image(path_image), flip_x, flip_y)
             frames.append(Frame(img))
         return tuple(frames)
 
@@ -147,7 +167,7 @@ class Animation(ManagementMixin):
 
     @property
     def obj(self) -> None:
-        raise OBJ_WRITING_ONLY
+        raise WRITING_ONLY
 
     @obj.setter
     def obj(self, obj: 'BaseObject') -> None:

@@ -1,3 +1,5 @@
+from copy import deepcopy
+
 from pygame import sprite, mask as mk
 
 from engine.animations import AnimationGroup, EventsAnimationGroup
@@ -19,28 +21,28 @@ class BaseObject(sprite.Sprite):
         events_action_group (EventsActionGroup): группа событий и связанных с ними действий.
             По дефолту пустой EventsActionGroup.
         events_animation_group (EventsAnimationGroup): группа событий и связанных с ними анимаций.
-        image (Surface): начальное отображение объекта.
-        rect (Rect): прямоугольник начального отображения объекта.
-        mask (Mask): маска начального отображения объекта.
-        direction (DirectionGroupEnum | None, optional): направление объекта. По дефолту None.
     """
 
     _all_objects_group = AllObjectsGroup()
     groups: tuple[BaseGroup, ...] = tuple()
     events_action_group: EventsActionGroup = EventsActionGroup()
     events_animation_group: EventsAnimationGroup
-    image = EMPTY_FRAME.image
-    rect = image.get_rect()
-    rect.center = ZERO_COORDINATES
-    mask = mk.from_surface(image)
-    direction: DirectionGroupEnum | None = None
 
     def __init__(self) -> None:
         """Инициализация базового объекта."""
         super().__init__(self._all_objects_group, *self.groups)
-        self._animation_group = AnimationGroup(events_animations=self.events_animation_group, obj=self)
-        self._actions_group = ActionGroup(events_actions=self.events_action_group, obj=self)
-        self.status = Status()
+        self._set_default_values()
+        self._animation_group = AnimationGroup(events_animations=deepcopy(self.events_animation_group), obj=self)
+        self._actions_group = ActionGroup(events_actions=deepcopy(self.events_action_group), obj=self)
+
+    def _set_default_values(self) -> None:
+        """Устанавливает дефолтные значения для игрового объекта."""
+        self.status = Status(self)
+        self.image = EMPTY_FRAME.image
+        self.rect = self.image.get_rect()
+        self.rect.center = ZERO_COORDINATES
+        self.mask = mk.from_surface(self.image)
+        self.direction: DirectionGroupEnum | None = None
 
     def events(self, pressed: Pressed) -> None:
         """Проверка совершённых событий.
@@ -48,7 +50,7 @@ class BaseObject(sprite.Sprite):
         Args:
             pressed (Pressed): объект состояния кнопок, коллизии и активности объекта.
         """
-        pressed(self)
+        pressed.status = self.status
         self._animation_group.events(pressed)
         self._actions_group.events(pressed)
 
@@ -68,6 +70,58 @@ class BaseObject(sprite.Sprite):
     def scale(self) -> None:
         """Изменяет размер объекта под текущий размер экрана."""
         self._animation_group.scale()
+
+    def _get_collision_side(self, obj: 'BaseObject') -> DirectionGroupEnum:
+        """Отдаёт сторону коллизии.
+
+        Args:
+            obj ('BaseObject'): объект для проверки стороны коллизии.
+
+        Returns:
+            DirectionGroupEnum: сторона коллизии.
+        """
+        if self.rect.bottom <= obj.rect.top + obj.rect.height and self.rect.bottom >= obj.rect.top:
+            return DirectionGroupEnum.DOWN
+        elif self.rect.top <= obj.rect.bottom and self.rect.top >= obj.rect.bottom - obj.rect.height:
+            return DirectionGroupEnum.UP
+        elif self.rect.right >= obj.rect.left and self.rect.left <= obj.rect.left:
+            return DirectionGroupEnum.RIGHT
+        elif self.rect.left <= obj.rect.right and self.rect.right >= obj.rect.right:
+            return DirectionGroupEnum.LEFT
+
+    def collide_side_rect_with_mask(self, obj: 'BaseObject', side: DirectionGroupEnum) -> bool:
+        """Проверяет сторону коллизии rect объекта c маской другого объекта.
+
+        Args:
+            obj (BaseObject): объект для проверки коллизии.
+            side (DirectionGroupEnum): сторона для проверки.
+
+        Returns:
+            bool: флаг коллизии.
+        """
+        if not self.rect.colliderect(obj.rect):
+            return False
+        xoffset = obj.rect[0] - self.rect[0]
+        yoffset = obj.rect[1] - self.rect[1]
+        if self.mask.overlap(obj.mask, (xoffset, yoffset)) and self._get_collision_side(obj) == side:
+            return True
+        return False
+
+    def collide_side_mask(self, obj: 'BaseObject', side: DirectionGroupEnum) -> bool:
+        """Проверяет коллизию по маске с объектом с определённой стороны.
+
+        Args:
+            obj (BaseObject): объект для проверки коллизии.
+            side (DirectionGroupEnum): сторона для проверки.
+
+        Returns:
+            bool: флаг коллизии.
+        """
+        if not self.rect.colliderect(obj.rect):
+            return False
+        if sprite.collide_mask(self, obj) and self._get_collision_side(obj) == side:
+            return True
+        return False
 
 
 class SolidObject(BaseObject):

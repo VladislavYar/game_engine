@@ -1,24 +1,30 @@
-import pygame
-from pygame import event, display
+from typing import Iterable
+
+from pygame import event, display, Surface, transform, Color
 
 from engine.mixins import QuitMixin, SetSettingsMixin
 from engine.settings import Settings
 from engine.audio import Audio
 from engine.metaclasses.engine import EngineMeta
-from engine.objects.groups import AllObjectsGroup
+from engine.objects.groups import AllObjectsGroup, BaseGroup
 from engine.time import GlobalClock
+from engine.utils.screen import get_sreen_resolution
 
 
 class Engine(QuitMixin, SetSettingsMixin, metaclass=EngineMeta):
     """Игровой движок.
 
     Attributes:
+        visible_map (Surface): отображение видимой части карты.
+        draw_groups (Iterable[BaseGroup]): группы для вывода. Выводятся в порядке индекса.
         _global_clock (GlobalClock): объект глобальных часов игрового процесса.
         _audio (Audio): объект для работы с аудио.
         _settings (Settings): объект настроек игрового процесса.
         _all_objects_group (AllObjectsGroup): группа всех игровых объектов.
     """
 
+    visible_map: Surface
+    draw_groups: Iterable[BaseGroup]
     _global_clock: GlobalClock = GlobalClock()
     _audio: Audio = Audio()
     _settings: Settings = Settings()
@@ -43,9 +49,12 @@ class Engine(QuitMixin, SetSettingsMixin, metaclass=EngineMeta):
         self._all_objects_group.update()
 
     def _draw(self) -> None:
-        """Вывод элемекнтов на дисплей."""
-        self.display.fill(pygame.Color('black'))
-        self._all_objects_group.draw(self.display)
+        """Вывод элементов на дисплей."""
+        self.visible_map.fill(Color('black'))
+        for group in self.draw_groups:
+            group.draw(self.visible_map)
+        frame = transform.scale(self.visible_map, get_sreen_resolution())
+        self.display.blit(frame, frame.get_rect())
         display.flip()
 
     def _main_loop(self) -> None:

@@ -1,10 +1,5 @@
 import pygame
 
-from engine.animations import Animation
-from engine.animations.frames import Frame
-from engine.actions import DynamicAction, Action
-from engine.constants import Size
-
 
 class SetSettingsMixin:
     """Mixin установки настроек игрового процесса."""
@@ -17,6 +12,7 @@ class SetSettingsMixin:
             cls._settings['graphics']['screen_resolution'],
             flags,
         )
+        cls.visible_map = pygame.Surface(cls._settings['engine']['base_visible_map_size'])
         pygame.display.set_caption(cls._settings['engine']['caption_title'])
         pygame.display.set_icon(pygame.image.load(cls._settings['engine']['path_icon']))
 
@@ -28,21 +24,7 @@ class SetSettingsMixin:
         cls._audio.voices_volume = cls._settings['audio']['voices_volume']
 
     @classmethod
-    def _set_settings_animations(cls) -> None:
-        """Устанавливает настройки анимаций."""
-        Frame.base_screen_size = Size(*cls._settings['engine']['base_screen_size_frame'])
-        Animation.time_between = cls._settings['engine']['time_between_animation_frames']
-
-    @classmethod
-    def _set_settings_actions(cls) -> None:
-        """Устанавливает настройки действий."""
-        Action.time_between = cls._settings['engine']['time_between_animation_actions']
-        DynamicAction.base_screen_size = Size(*cls._settings['engine']['base_screen_size_action'])
-
-    @classmethod
     def _set_settings(cls) -> None:
         """Установка настроек игрового процесса."""
         cls._set_settings_display()
         cls._set_settings_audio()
-        cls._set_settings_animations()
-        cls._set_settings_actions()

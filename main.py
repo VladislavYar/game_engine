@@ -4,10 +4,11 @@ import pygame
 
 from engine.animations import EventsAnimationGroup, Animation, EventsAnimation
 from engine.objects import DynamicObject, Speed, SolidObject
-from engine.events.constants import DEFAULT_EVENT
+from engine.events.constants import DEFAULT_EVENT, FALL_EVENT
 from engine.events import Events
 from engine.physics import IsometryPhysics, PlatformerPhysics
 from engine import Engine
+from engine.objects.groups import DynamicObjectsGroup, SolidObjectsGroup
 
 
 PATH_ISOMETRY = Path('isometry')
@@ -35,9 +36,19 @@ class TileObject(SolidObject):
     )
 
 
-class TestObject1(PlatformerPhysics, DynamicObject):
-    speed = Speed(3, 6)
+class BoxObject(SolidObject):
     events_animation_group = EventsAnimationGroup(
+        EventsAnimation(DEFAULT_EVENT, Animation(PATH_PLATFORMER / Path('box'), is_loop=True))
+    )
+
+
+class TestObject1(PlatformerPhysics, DynamicObject):
+    speed = Speed(3, 10, 5, 6)
+    events_animation_group = EventsAnimationGroup(
+        EventsAnimation(
+            FALL_EVENT,
+            Animation(PATH_PLATFORMER / 'fall', flip_by_derection=True, is_loop=True, time_between=100),
+        ),
         EventsAnimation(
             Events(pygame.K_a, pygame.K_LSHIFT),
             Animation(PATH_PLATFORMER / 'run', flip_by_derection=True, is_loop=True, time_between=50),
@@ -61,12 +72,20 @@ class TestObject1(PlatformerPhysics, DynamicObject):
 
 
 class Game(Engine):
+    draw_groups = (DynamicObjectsGroup(), SolidObjectsGroup())
+
     def __init__(self) -> None:
-        # tile = TileObject()
-        # tile.rect.center = 500, 500
+        tile = TileObject()
+        box = BoxObject()
+        box1 = BoxObject()
+        box2 = BoxObject()
+        tile.rect.center = 700, 550
         # obj = TestObject()
         obj1 = TestObject1()
-        obj1.rect.center = 500, 500
+        obj1.rect.center = 600, 600
+        box.rect.center = 2000, 2000
+        box1.rect.center = 1000, 500
+        box2.rect.center = 1500, 1500
         # obj.rect.center = 500, 500
 
 

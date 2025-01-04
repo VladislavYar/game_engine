@@ -7,8 +7,11 @@ from engine.audio import Audio
 from engine.utils.events import check_events
 from engine.constants import Size
 from engine.mixins.management import ManagementMixin
+from engine.settings import Settings
+from engine.constants.direction import DirectionGroupEnum
 
 if TYPE_CHECKING:
+    from engine.objects.groups import BaseGroup
     from engine.objects import BaseObject
 
 
@@ -16,12 +19,14 @@ class Action(ManagementMixin):
     """Класс представляющий действие.
 
     Attributes:
-        time_between (int): время между действиями.
+        _settings (Settings): объект настроек игрового процесса.
         _audio (Audio): объект для работы с аудио.
+        time_between (int): время между действиями.
     """
 
-    time_between: int
+    _settings: Settings = Settings()
     _audio: Audio = Audio()
+    time_between: int = _settings['engine']['time_between_animation_actions']
 
     def __init__(
         self,
@@ -64,22 +69,49 @@ class DynamicAction(Action):
 
     Attributes:
         base_screen_size (Size): базовый размер экрана для вычисления скорости.
+        base_visible_map_size (Size): базовый размер видимой карты.
     """
 
-    base_screen_size: Size
+    base_screen_size: Size = Size(*Action._settings['engine']['base_screen_size_action'])
+    base_visible_map_size: Size = Size(*Action._settings['engine']['base_visible_map_size'])
 
     @classmethod
     @lru_cache
     def _get_coef(cls, width: int, height: int) -> tuple[float, float]:
-        """Отдаёт коэффициент разности разрешения экрана от базового.
+        """Отдаёт коэффициент разности размера видимой карты от базового разрешения.
 
         Args:
-            width (int): ширина разрешения экрана.
-            height (int): высота разрешения экрана.
+            width (int): ширина видимой карты.
+            height (int): высота видимой карты.
         Returns:
-            tuple[float, float]: коэффициент разности разрешения экрана от базового.
+            tuple[float, float]: коэффициент разности размера видимой карты от базового разрешения.
         """
         return width / cls.base_screen_size.width, height / cls.base_screen_size.height
+
+    def _push_out_object(
+        self,
+        obj: 'BaseObject',
+        group: 'BaseGroup',
+        direction: DirectionGroupEnum,
+        sing_x_y: tuple[int, int],
+    ) -> None:
+        """Метод выталкивания объекта.
+
+        Args:
+            obj (BaseObject): объект для выталкивания.
+            group (BaseGroup): группа для проверки коллизии.
+            direction (DirectionGroupEnum): направление проверки коллизии.
+            sing_x_y (tuple[int, int]): направление выталкивания.
+        """
+        if sprite := group.collide_side_mask(obj, direction):
+            sign_x, sign_y = sing_x_y
+            while True:
+                obj.rect.y -= sign_y
+                obj.rect.x -= sign_x
+                if not obj.collide_side_mask(sprite, direction):
+                    obj.rect.y -= sign_y
+                    obj.rect.x -= sign_x
+                    break
 
 
 @dataclass

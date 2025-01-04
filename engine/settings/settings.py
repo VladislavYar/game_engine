@@ -5,9 +5,10 @@ from pathlib import Path
 from engine.settings.types import TYPES_SETTINGS, SETTINGS_SCHEMAS
 from engine.settings.schemas import AllSettingsSchema
 from engine.settings.constants import SettingsFilesPathEnum, ENCODING
+from engine.metaclasses.singleton import SingletonMeta
 
 
-class Settings:
+class Settings(metaclass=SingletonMeta):
     """Класс настроек игрового процесса."""
 
     def __init__(self) -> None:

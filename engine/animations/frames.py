@@ -4,18 +4,20 @@ from typing import Callable
 from pygame import transform, Surface, mask
 
 from engine.constants import Size
-from engine.utils.screen import get_sreen_resolution
 from engine.constants.direction import DirectionGroupEnum
+from engine.settings import Settings
 
 
 class BaseFrame:
     """Класс представляющий базовый кадр.
 
     Attributes:
+        _settings (Settings): объект настроек игрового процесса.
         _map_flip_by_derection: (dict[DirectionGroupEnum | None, Callable]):
             словарь - направления и функция переворота изображения.
     """
 
+    _settings: Settings = Settings()
     _map_flip_by_derection: dict[DirectionGroupEnum | None, Callable] = {
         None: lambda image: image,
         DirectionGroupEnum.RIGHT: lambda image: image,
@@ -58,6 +60,14 @@ class BaseFrame:
         """
         return self._map_flip_by_derection[self.direction](self._image)
 
+    def __deepcopy__(self, *arg, **kwarg) -> 'BaseFrame':
+        """Копирует frame.
+
+        Returns:
+            BaseFrame: копия frame.
+        """
+        return self.__class__(self._original_image.copy())
+
 
 class EmptyFrame(BaseFrame):
     """Класс представляющий пустой кадр."""
@@ -68,9 +78,11 @@ class Frame(BaseFrame):
 
     Attributes:
         base_screen_size Size: базовый размер экрана для вычисления размера кадра.
+        base_visible_map_size (Size): базовый размер видимой карты.
     """
 
-    base_screen_size: Size
+    base_screen_size: Size = Size(*BaseFrame._settings['engine']['base_screen_size_frame'])
+    base_visible_map_size: Size = Size(*BaseFrame._settings['engine']['base_visible_map_size'])
 
     @classmethod
     @lru_cache
@@ -86,7 +98,7 @@ class Frame(BaseFrame):
         return width / cls.base_screen_size.width, height / cls.base_screen_size.height
 
     def scale(self) -> None:
-        """Изменяет размер кадра анимации под текущий размер экрана."""
-        coef_width, coef_height = self._get_coef(*get_sreen_resolution())
+        """Изменяет размер кадра анимации под текущий размер видимой карты."""
+        coef_width, coef_height = self._get_coef(*self.base_visible_map_size)
         size = Size(self._original_size.width * coef_width, self._original_size.height * coef_height)
         self._set_data_frame(transform.scale(self._original_image.copy(), size))

@@ -7,3 +7,4 @@ class NameSpeedEnum(StrEnum):
     WALK = 'walk'
     RUN = 'run'
     SQUAT = 'squat'
+    FALL = 'fall'

@@ -8,10 +8,13 @@ from engine.settings.constants import (
     DEFAULT_NAME_ICON,
     BASE_SCREEN_SIZE_FRAME,
     BASE_SCREEN_SIZE_ACTION,
-    TimeBetweenAnimationActions,
-    TimeBetweenAnimationFrames,
+    BASE_VISIBLE_MAP_SIZE,
+    RectOutlineWidthEnum,
+    TimeBetweenAnimationActionsEnum,
+    TimeBetweenAnimationFramesEnum,
     VolumeEnum,
     FPSEnum,
+    RGBColorEnum,
 )
 from engine.settings.types import TYPES_SETTINGS
 from engine.constants.path import BasePathEnum
@@ -44,7 +47,7 @@ class BaseSettingsSchema(BaseModel):
         setattr(self, key, value)
 
 
-class ScreenResolutionShema(BaseModel):
+class ScreenResolutionSchema(BaseModel):
     """Схема разрешения экрана."""
 
     width: int = Field(description='Ширина экрана')
@@ -52,24 +55,47 @@ class ScreenResolutionShema(BaseModel):
 
     @model_validator(mode='after')
     @classmethod
-    def validate_all_before(cls, values: 'ScreenResolutionShema') -> 'ScreenResolutionShema':
+    def validate_all_before(cls, values: 'ScreenResolutionSchema') -> 'ScreenResolutionSchema':
         """Валидация разрешения экрана после валидации полей.
 
         Args:
-            values (ScreenResolutionShema): данные по полям.
+            values (ScreenResolutionSchema): данные по полям.
 
         Returns:
-            ScreenResolutionShema: отвалидированные данные по полям.
+            ScreenResolutionSchema: отвалидированные данные по полям.
         """
         if (values.width, values.height) in SCREEN_RESOLUTIONS:
             return values
         raise ValueError(SCREEN_RESOLUTION_MESSAGE_ERROR.format(values.width, values.height))
 
 
+class RGBColorSchema(BaseModel):
+    """Схема RGB цвета."""
+
+    red: int = Field(
+        default=RGBColorEnum.DEFAULT_RED,
+        ge=RGBColorEnum.MIN_COLOR,
+        le=RGBColorEnum.MAX_COLOR,
+        description='Красный цвет',
+    )
+    green: int = Field(
+        default=RGBColorEnum.DEFAULT_GREEN,
+        ge=RGBColorEnum.MIN_COLOR,
+        le=RGBColorEnum.MAX_COLOR,
+        description='Зелёный цвет',
+    )
+    blue: int = Field(
+        default=RGBColorEnum.DEFAULT_BLUE,
+        ge=RGBColorEnum.MIN_COLOR,
+        le=RGBColorEnum.MAX_COLOR,
+        description='Голубой',
+    )
+
+
 class GraphicsSettingsSchema(BaseSettingsSchema):
     """Схема настроек графики."""
 
-    screen_resolution: ScreenResolutionShema = Field(
+    screen_resolution: ScreenResolutionSchema = Field(
         default_factory=lambda: GraphicsSettingsSchema.get_default_screen_resolution(),
         description='Разрешение экрана',
     )
@@ -79,14 +105,14 @@ class GraphicsSettingsSchema(BaseSettingsSchema):
     )
 
     @staticmethod
-    def get_default_screen_resolution() -> ScreenResolutionShema:
+    def get_default_screen_resolution() -> ScreenResolutionSchema:
         """Отдаёт дефолтное значение разрешение экрана.
 
         Returns:
-            ScreenResolutionShema: разрешение экрана.
+            ScreenResolutionSchema: разрешение экрана.
         """
         monitor = get_monitors()[0]
-        return ScreenResolutionShema(width=monitor.width, height=monitor.height)
+        return ScreenResolutionSchema(width=monitor.width, height=monitor.height)
 
 
 class AudioSettingsSchema(BaseSettingsSchema):
@@ -122,43 +148,80 @@ class EngineSettingsSchema(BaseSettingsSchema):
         description='Название иконки окна игры',
     )
     time_between_animation_frames: int = Field(
-        default=TimeBetweenAnimationFrames.DEFAULT_TIME,
-        ge=TimeBetweenAnimationFrames.MIN_TIME,
-        le=TimeBetweenAnimationFrames.MAX_TIME,
+        default=TimeBetweenAnimationFramesEnum.DEFAULT_TIME,
+        ge=TimeBetweenAnimationFramesEnum.MIN_TIME,
+        le=TimeBetweenAnimationFramesEnum.MAX_TIME,
         description='Время между кадрами анимаций',
     )
     time_between_animation_actions: int = Field(
-        default=TimeBetweenAnimationActions.DEFAULT_TIME,
-        ge=TimeBetweenAnimationActions.MIN_TIME,
-        le=TimeBetweenAnimationActions.MAX_TIME,
+        default=TimeBetweenAnimationActionsEnum.DEFAULT_TIME,
+        ge=TimeBetweenAnimationActionsEnum.MIN_TIME,
+        le=TimeBetweenAnimationActionsEnum.MAX_TIME,
         description='Время между действиями',
     )
-    base_screen_size_frame: ScreenResolutionShema = Field(
+    base_screen_size_frame: ScreenResolutionSchema = Field(
         default_factory=lambda: EngineSettingsSchema.get_base_screen_size_frame(),
         description='Базовое разрешение экрана расчёта размера фрейма',
     )
-    base_screen_size_action: ScreenResolutionShema = Field(
+    base_screen_size_action: ScreenResolutionSchema = Field(
         default_factory=lambda: EngineSettingsSchema.get_base_screen_size_action(),
         description='Базовое разрешение экрана расчёта скорости действия',
     )
+    base_visible_map_size: ScreenResolutionSchema = Field(
+        default_factory=lambda: EngineSettingsSchema.get_base_visible_map_size(),
+        description='Базовый размер видимой игровой карты',
+    )
+    debug_mode: bool = Field(default=False, description='Флаг debug mode')
+    rect_outline_color: RGBColorSchema = Field(
+        default_factory=lambda: EngineSettingsSchema.get_rect_outline_color(),
+        description='Цвет обводки rect',
+    )
+    rect_outline_width: int = Field(
+        default=RectOutlineWidthEnum.DEFAULT_WIDTH,
+        ge=RectOutlineWidthEnum.MIN_WIDTH,
+        le=RectOutlineWidthEnum.MAX_WIDTH,
+        description='Ширина обводки rect',
+    )
 
     @staticmethod
-    def get_base_screen_size_frame() -> ScreenResolutionShema:
+    def get_rect_outline_color() -> RGBColorSchema:
+        """Отдаёт цвет обводки rect.
+
+        Returns:
+            RGBColorSchema: цвет обводки rect.
+        """
+        return RGBColorSchema(
+            red=RGBColorEnum.DEFAULT_RED,
+            green=RGBColorEnum.DEFAULT_GREEN,
+            blue=RGBColorEnum.DEFAULT_BLUE,
+        )
+
+    @staticmethod
+    def get_base_screen_size_frame() -> ScreenResolutionSchema:
         """Отдаёт базовое значение разрешения экрана расчёта размера фрейма.
 
         Returns:
-            ScreenResolutionShema: разрешение экрана.
+            ScreenResolutionSchema: разрешение экрана.
         """
-        return ScreenResolutionShema(width=BASE_SCREEN_SIZE_FRAME.width, height=BASE_SCREEN_SIZE_FRAME.height)
+        return ScreenResolutionSchema(width=BASE_SCREEN_SIZE_FRAME.width, height=BASE_SCREEN_SIZE_FRAME.height)
 
     @staticmethod
-    def get_base_screen_size_action() -> ScreenResolutionShema:
+    def get_base_screen_size_action() -> ScreenResolutionSchema:
         """Отдаёт базовое значение разрешения экрана расчёта скорости действия.
 
         Returns:
-            ScreenResolutionShema: разрешение экрана.
+            ScreenResolutionSchema: разрешение экрана.
         """
-        return ScreenResolutionShema(width=BASE_SCREEN_SIZE_ACTION.width, height=BASE_SCREEN_SIZE_ACTION.height)
+        return ScreenResolutionSchema(width=BASE_SCREEN_SIZE_ACTION.width, height=BASE_SCREEN_SIZE_ACTION.height)
+
+    @staticmethod
+    def get_base_visible_map_size() -> ScreenResolutionSchema:
+        """Отдаёт базовое значение размера видимой игровой карты.
+
+        Returns:
+            ScreenResolutionSchema: разрешение экрана.
+        """
+        return ScreenResolutionSchema(width=BASE_VISIBLE_MAP_SIZE.width, height=BASE_VISIBLE_MAP_SIZE.height)
 
     @field_validator('path_icon', mode='after')
     @classmethod
