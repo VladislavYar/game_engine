@@ -82,7 +82,7 @@ class Animation(ManagementMixin):
         for file in os.listdir(path):
             full_path = os.path.join(path, file)
             if not os.path.isdir(full_path):
-                validate_format_file(file, ('png',))
+                validate_format_file(file, ('.png',))
                 path_images.append(full_path)
         return path_images
 

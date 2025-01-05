@@ -43,7 +43,7 @@ class BoxObject(SolidObject):
 
 
 class TestObject1(PlatformerPhysics, DynamicObject):
-    speed = Speed(3, 10, 5, 6)
+    speed = Speed(2, 4, 5, 2.5)
     events_animation_group = EventsAnimationGroup(
         EventsAnimation(
             FALL_EVENT,

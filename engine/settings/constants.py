@@ -17,17 +17,21 @@ SCREEN_RESOLUTIONS = (
     Size(3840, 2160),
 )
 
-BASE_SCREEN_SIZE_FRAME = BASE_SCREEN_SIZE_ACTION = SCREEN_RESOLUTIONS[0]
+BASE_SCREEN_SIZE_FRAME = BASE_SCREEN_SIZE_ACTION = BASE_SCREEN_SIZE_TEXT = SCREEN_RESOLUTIONS[0]
 
 BASE_VISIBLE_MAP_SIZE = SCREEN_RESOLUTIONS[-1]
 
 SCREEN_RESOLUTION_MESSAGE_ERROR = 'Разрешение экрана {}x{} не поддерживается'
 
+NO_FONT_IN_SYSTEM_MESSAGE_ERROR = 'Ширифт {} отсутсвует в системе'
+
 MAX_LEN_CAPTION_TITLE = 120
 
-DEFAULT_NAME_ICON = 'icon.ico'
-
 ENCODING = 'utf-8'
+
+ACCEPTABLE_ICON_FORMATS = ('.png', '.bmp', '.jpeg', '.gif', '.tga')
+
+ACCEPTABLE_FONT_FORMATS = ('.ttf', '.otf', '.bdf', 'pcf')
 
 
 class TimeBetweenAnimationFramesEnum(IntEnum):
@@ -52,6 +56,14 @@ class RectOutlineWidthEnum(IntEnum):
     DEFAULT_WIDTH = 3
     MIN_WIDTH = 0
     MAX_WIDTH = 10
+
+
+class CoefDropCheckEnum(Enum):
+    """Enum коэффициента к проверке падения."""
+
+    DEFAULT_COEF = 1
+    MIN_COEF = 1
+    MAX_COEF = 10
 
 
 class RGBColorEnum(IntEnum):
@@ -85,3 +97,11 @@ class FPSEnum(IntEnum):
 
     MAX_FPS = 300
     MIN_FPS = 30
+
+
+class TextSizeEnum(IntEnum):
+    """Enum размер текста."""
+
+    DEFAULT_SIZE = 18
+    MIN_SIZE = 1
+    MAX_SIZE = 100

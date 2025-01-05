@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Optional
 
 from pygame.sprite import Group, collide_mask
-from pygame import draw, Surface
+from pygame import Surface, draw
 
 from engine.events import Pressed
 from engine.metaclasses.singleton import SingletonMeta
@@ -74,16 +74,25 @@ class BaseGroup(Group, metaclass=SingletonMeta):
         for sprite in self.sprites():
             sprite.scale(*args, **kwargs)
 
+    def _debug_mode(self, surface: Surface) -> None:
+        """Debug mode
+
+        Args:
+            surface (Surface): отображение.
+        """
+        if not self._settings['engine']['debug_mode']:
+            return
+        for sprite in self.sprites():
+            draw.rect(
+                surface,
+                Color(*self._settings['engine']['rect_outline_color']),
+                sprite.rect,
+                width=self._settings['engine']['rect_outline_width'],
+            )
+
     def draw(self, surface: Surface, *arg, **kwarg) -> list['BaseObject']:
         """Добавляет обводку спрайтам при отладке."""
-        if self._settings['engine']['debug_mode']:
-            for sprite in self.sprites():
-                draw.rect(
-                    surface,
-                    Color(*self._settings['engine']['rect_outline_color']),
-                    sprite.rect,
-                    width=self._settings['engine']['rect_outline_width'],
-                )
+        self._debug_mode(surface)
         return super().draw(surface, *arg, **kwarg)
 
 

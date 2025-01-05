@@ -1,4 +1,5 @@
 from typing import Iterable
+from pathlib import Path
 
 
 def validate_format_file(filename: str, formats: Iterable[str]) -> None:
@@ -8,8 +9,6 @@ def validate_format_file(filename: str, formats: Iterable[str]) -> None:
         filename (str): название файла.
         formats (Iterable[str]): разрешённые форматы.
     """
-    filename = filename.split('.')
-    file_format = filename[-1]
-    if len(filename) > 1 and file_format in formats:
+    if Path(filename).suffix in formats:
         return
     raise ValueError(f'Файл не соответсвует форматам: {','.join(formats)}')

@@ -45,7 +45,7 @@ class BaseFrame:
             image (Surface): изображение кадра анимации.
         """
         self._image = image
-        self.rect = image.get_rect()
+        self.rect = image.get_frect()
         self.mask = mask.from_surface(image)
 
     def scale(self) -> None:

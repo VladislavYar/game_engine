@@ -9,6 +9,7 @@ from engine.metaclasses.engine import EngineMeta
 from engine.objects.groups import AllObjectsGroup, BaseGroup
 from engine.time import GlobalClock
 from engine.utils.screen import get_sreen_resolution
+from engine.text import Text
 
 
 class Engine(QuitMixin, SetSettingsMixin, metaclass=EngineMeta):
@@ -29,6 +30,13 @@ class Engine(QuitMixin, SetSettingsMixin, metaclass=EngineMeta):
     _audio: Audio = Audio()
     _settings: Settings = Settings()
     _all_objects_group: AllObjectsGroup = AllObjectsGroup()
+
+    def _debug_mode(self) -> None:
+        """Веbug mode."""
+        if not self._settings['engine']['debug_mode']:
+            return
+        fps = Text(text=f'{int(self._global_clock.get_fps())}')
+        self.visible_map.blit(fps.text, fps.rect)
 
     def _get_events(self) -> dict[int, event.Event]:
         """Отдаёт события в виде словаря.
@@ -51,10 +59,11 @@ class Engine(QuitMixin, SetSettingsMixin, metaclass=EngineMeta):
     def _draw(self) -> None:
         """Вывод элементов на дисплей."""
         self.visible_map.fill(Color('black'))
+        self._debug_mode()
         for group in self.draw_groups:
             group.draw(self.visible_map)
         frame = transform.scale(self.visible_map, get_sreen_resolution())
-        self.display.blit(frame, frame.get_rect())
+        self.display.blit(frame, frame.get_frect())
         display.flip()
 
     def _main_loop(self) -> None:

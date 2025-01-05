@@ -2,7 +2,7 @@ from engine.constants.direction import DirectionGroupEnum
 
 from engine.actions import DynamicAction
 from engine.objects import DynamicObject
-from engine.physics.constants import SING_X_Y
+from engine.physics.constants import SING_X_Y, COEF_DROP_CHECK
 from engine.objects.constants import NameSpeedEnum
 from engine.objects.groups import SolidObjectsGroup
 
@@ -13,12 +13,19 @@ class MovementAction(DynamicAction):
     Attributes:
         direction_movement (DirectionGroupEnum): направление движения.
         name_field_speed (NameSpeedEnum): название поля скорости.
+        boost (float): ускорение действия.
         _solid_objects_group (SolidObjectsGroup): группа твёрдых объектов.
     """
 
     direction_movement: DirectionGroupEnum
     name_field_speed: NameSpeedEnum
+    boost: float = 0
     _solid_objects_group: SolidObjectsGroup = SolidObjectsGroup()
+
+    def _set_default_values(self) -> None:
+        """Добавляет к дефолтным значениям обновление текущего ускорения."""
+        super()._set_default_values()
+        self._current_boost = 0
 
     def perform(self, obj: DynamicObject) -> None:
         """Логика выполнения действия движения.
@@ -32,8 +39,9 @@ class MovementAction(DynamicAction):
         count_actions_performed = self._get_count_actions_performed()
         sign_x, sign_y = SING_X_Y[self.direction_movement]
         for _ in range(count_actions_performed):
-            obj.rect.x += getattr(obj.speed, self.name_field_speed) * coef_x * sign_x
-            obj.rect.y += getattr(obj.speed, self.name_field_speed) * coef_y * sign_y
+            self._current_boost += self.boost
+            obj.rect.x += (getattr(obj.speed, self.name_field_speed) + self._current_boost) * coef_x * sign_x
+            obj.rect.y += (getattr(obj.speed, self.name_field_speed) + self._current_boost) * coef_y * sign_y
             self._push_out_object(obj, self._solid_objects_group, self.direction_movement, (sign_x, sign_y))
 
 
@@ -55,7 +63,7 @@ class CheckObjectAction(DynamicAction):
         if self._get_count_actions_performed():
             obj.status.fall = True
         _, coef_y = self._get_coef(*self.base_visible_map_size)
-        moving_y = obj.speed.fall * coef_y
+        moving_y = obj.speed.fall * coef_y * COEF_DROP_CHECK
         obj.rect.y += moving_y
         if sprite := self._solid_objects_group.collide_side_mask(obj, DirectionGroupEnum.DOWN):
             obj.rect.bottom = sprite.rect.top
@@ -88,6 +96,7 @@ class FallAction(MovementAction):
 
     name_field_speed = NameSpeedEnum.FALL
     direction_movement = DirectionGroupEnum.DOWN
+    boost = 0.05
 
 
 class WalkAction(MovementAction):

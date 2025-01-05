@@ -8,11 +8,11 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-pygame = "^2.6.1"
 pre-commit = "^4.0.1"
 ruff = "^0.8.3"
 pydantic = {extras = ["all"], version = "^2.10.4"}
 screeninfo = "^0.8.1"
+pygame-ce = "^2.5.2"
 
 
 [build-system]

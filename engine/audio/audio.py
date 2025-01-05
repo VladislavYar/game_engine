@@ -9,7 +9,6 @@ class Audio(metaclass=SingletonMeta):
 
     def __init__(self) -> None:
         """Инициализация аудио игрового процесса."""
-        mixer.init()
         self._effects: dict[str, mixer.Sound] = {}
         self._voices: dict[str, mixer.Sound] = {}
 

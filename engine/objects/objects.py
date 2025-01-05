@@ -39,7 +39,7 @@ class BaseObject(sprite.Sprite):
         """Устанавливает дефолтные значения для игрового объекта."""
         self.status = Status(self)
         self.image = EMPTY_FRAME.image
-        self.rect = self.image.get_rect()
+        self.rect = self.image.get_frect()
         self.rect.center = ZERO_COORDINATES
         self.mask = mk.from_surface(self.image)
         self.direction: DirectionGroupEnum | None = None

@@ -1,21 +1,28 @@
-from pydantic import BaseModel, Field, model_validator, field_validator
+from pydantic import BaseModel, Field, model_validator, field_validator, FilePath
 from screeninfo import get_monitors
+from pygame import font
 
 from engine.settings.constants import (
     SCREEN_RESOLUTIONS,
     SCREEN_RESOLUTION_MESSAGE_ERROR,
     MAX_LEN_CAPTION_TITLE,
-    DEFAULT_NAME_ICON,
     BASE_SCREEN_SIZE_FRAME,
     BASE_SCREEN_SIZE_ACTION,
+    BASE_SCREEN_SIZE_TEXT,
     BASE_VISIBLE_MAP_SIZE,
+    ACCEPTABLE_ICON_FORMATS,
+    ACCEPTABLE_FONT_FORMATS,
+    NO_FONT_IN_SYSTEM_MESSAGE_ERROR,
+    CoefDropCheckEnum,
     RectOutlineWidthEnum,
     TimeBetweenAnimationActionsEnum,
     TimeBetweenAnimationFramesEnum,
     VolumeEnum,
     FPSEnum,
     RGBColorEnum,
+    TextSizeEnum,
 )
+from engine.utils.file import validate_format_file
 from engine.settings.types import TYPES_SETTINGS
 from engine.constants.path import BasePathEnum
 
@@ -141,12 +148,10 @@ class AudioSettingsSchema(BaseSettingsSchema):
 class EngineSettingsSchema(BaseSettingsSchema):
     """Схема настроек движка."""
 
-    caption_title: str = Field(default='Game', description='Заголовок окна игры', max_length=MAX_LEN_CAPTION_TITLE)
-    path_icon: str = Field(
-        default_factory=lambda: str(BasePathEnum.ICONS_PATH.value / DEFAULT_NAME_ICON),
-        alias='name_icon',
-        description='Название иконки окна игры',
+    caption_title: str | None = Field(
+        default=None, description='Заголовок окна игры', max_length=MAX_LEN_CAPTION_TITLE
     )
+    path_icon: FilePath | None = Field(default=None, alias='name_icon', description='Название иконки окна игры')
     time_between_animation_frames: int = Field(
         default=TimeBetweenAnimationFramesEnum.DEFAULT_TIME,
         ge=TimeBetweenAnimationFramesEnum.MIN_TIME,
@@ -167,6 +172,10 @@ class EngineSettingsSchema(BaseSettingsSchema):
         default_factory=lambda: EngineSettingsSchema.get_base_screen_size_action(),
         description='Базовое разрешение экрана расчёта скорости действия',
     )
+    base_screen_size_text: ScreenResolutionSchema = Field(
+        default_factory=lambda: EngineSettingsSchema.get_base_screen_size_text(),
+        description='Базовое разрешение экрана расчёта размера текста',
+    )
     base_visible_map_size: ScreenResolutionSchema = Field(
         default_factory=lambda: EngineSettingsSchema.get_base_visible_map_size(),
         description='Базовый размер видимой игровой карты',
@@ -182,6 +191,39 @@ class EngineSettingsSchema(BaseSettingsSchema):
         le=RectOutlineWidthEnum.MAX_WIDTH,
         description='Ширина обводки rect',
     )
+    coef_drop_check: float = Field(
+        default=CoefDropCheckEnum.DEFAULT_COEF.value,
+        ge=CoefDropCheckEnum.MIN_COEF.value,
+        le=CoefDropCheckEnum.MAX_COEF.value,
+        description='Коэффициент к проверке падения',
+    )
+    text_color: RGBColorSchema = Field(
+        default_factory=lambda: EngineSettingsSchema.get_text_color(),
+        description='Цвет текста',
+    )
+    text_size: int = Field(
+        default=TextSizeEnum.DEFAULT_SIZE,
+        ge=TextSizeEnum.MIN_SIZE,
+        le=TextSizeEnum.MAX_SIZE,
+        description='Размер текста',
+    )
+    path_fount: FilePath | None = Field(default=None, description='Путь до ширифта')
+    name_fount: str = Field(
+        default_factory=lambda: EngineSettingsSchema._correct_name_fount(font.get_default_font()),
+        description='Название ширифта',
+    )
+
+    @staticmethod
+    def _correct_name_fount(name_fount: str) -> str:
+        """Корректирует название ширифта.
+
+        Args:
+            name_fount (str): название ширифта.
+
+        Returns:
+            str: корректное название ширифта.
+        """
+        return ''.join(name_fount.lower().split()).split('.')[0]
 
     @staticmethod
     def get_rect_outline_color() -> RGBColorSchema:
@@ -189,6 +231,19 @@ class EngineSettingsSchema(BaseSettingsSchema):
 
         Returns:
             RGBColorSchema: цвет обводки rect.
+        """
+        return RGBColorSchema(
+            red=RGBColorEnum.DEFAULT_RED,
+            green=RGBColorEnum.DEFAULT_GREEN,
+            blue=RGBColorEnum.DEFAULT_BLUE,
+        )
+
+    @staticmethod
+    def get_text_color() -> RGBColorSchema:
+        """Отдаёт цвет текста.
+
+        Returns:
+            RGBColorSchema: отдаёт цвет текста.
         """
         return RGBColorSchema(
             red=RGBColorEnum.DEFAULT_RED,
@@ -215,6 +270,15 @@ class EngineSettingsSchema(BaseSettingsSchema):
         return ScreenResolutionSchema(width=BASE_SCREEN_SIZE_ACTION.width, height=BASE_SCREEN_SIZE_ACTION.height)
 
     @staticmethod
+    def get_base_screen_size_text() -> ScreenResolutionSchema:
+        """Отдаёт базовое значение разрешения экрана расчёта размера текста.
+
+        Returns:
+            ScreenResolutionSchema: разрешение экрана.
+        """
+        return ScreenResolutionSchema(width=BASE_SCREEN_SIZE_TEXT.width, height=BASE_SCREEN_SIZE_TEXT.height)
+
+    @staticmethod
     def get_base_visible_map_size() -> ScreenResolutionSchema:
         """Отдаёт базовое значение размера видимой игровой карты.
 
@@ -223,11 +287,27 @@ class EngineSettingsSchema(BaseSettingsSchema):
         """
         return ScreenResolutionSchema(width=BASE_VISIBLE_MAP_SIZE.width, height=BASE_VISIBLE_MAP_SIZE.height)
 
-    @field_validator('path_icon', mode='after')
+    @field_validator('path_icon', mode='before')
     @classmethod
-    def forming_path_icon(cls, value: str) -> str:
-        """Фомирование путь до иконки окна игры."""
-        return str(BasePathEnum.ICONS_PATH.value / value)
+    def validate_path_icon(cls, value: str) -> str:
+        """Фомирование путь до иконки окна игры и валидирует тип файла."""
+        validate_format_file(value, ACCEPTABLE_ICON_FORMATS)
+        return BasePathEnum.ICONS_PATH.value / value
+
+    @field_validator('path_fount', mode='before')
+    @classmethod
+    def validate_path_fount(cls, value: FilePath) -> FilePath:
+        """Фомирование путь до шрифта игры и валидирует тип файла."""
+        validate_format_file(value, ACCEPTABLE_FONT_FORMATS)
+        return BasePathEnum.FONTS_PATH.value / value
+
+    @field_validator('name_fount', mode='after')
+    @classmethod
+    def validate_name_fount(cls, value: str) -> str:
+        """Проверяет наличие ширифта в системе."""
+        if cls._correct_name_fount(value) in font.get_fonts():
+            return value
+        raise ValueError(NO_FONT_IN_SYSTEM_MESSAGE_ERROR.format(value))
 
 
 class AllSettingsSchema(BaseModel):

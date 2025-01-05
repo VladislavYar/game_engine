@@ -10,5 +10,6 @@ class BasePathEnum(Enum):
     SOUNDS_PATH = RESOURCES_PATH / 'sounds'
     SETTINGS_PATH = RESOURCES_PATH / 'settings'
     IMAGES_PATH = RESOURCES_PATH / 'images'
+    FONTS_PATH = BASE_PATH / 'fonts'
     ICONS_PATH = IMAGES_PATH / 'icons'
     ANIMATIONS_PATH = IMAGES_PATH / 'animations'

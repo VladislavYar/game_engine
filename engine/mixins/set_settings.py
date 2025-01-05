@@ -13,8 +13,10 @@ class SetSettingsMixin:
             flags,
         )
         cls.visible_map = pygame.Surface(cls._settings['engine']['base_visible_map_size'])
-        pygame.display.set_caption(cls._settings['engine']['caption_title'])
-        pygame.display.set_icon(pygame.image.load(cls._settings['engine']['path_icon']))
+        if cls._settings['engine']['caption_title']:
+            pygame.display.set_caption(cls._settings['engine']['caption_title'])
+        if cls._settings['engine']['path_icon']:
+            pygame.display.set_icon(pygame.image.load(cls._settings['engine']['path_icon']))
 
     @classmethod
     def _set_settings_audio(cls) -> None:
