@@ -6,33 +6,25 @@ from engine.animations import EventsAnimationGroup, Animation, EventsAnimation
 from engine.objects import DynamicObject, Speed, SolidObject
 from engine.events.constants import DEFAULT_EVENT, FALL_EVENT
 from engine.events import Events
-from engine.physics import IsometryPhysics, PlatformerPhysics
+from engine.physics import PlatformerPhysics
 from engine import Engine
-from engine.objects.groups import DynamicObjectsGroup, SolidObjectsGroup
+from engine.objects.groups import DynamicObjectsGroup, SolidObjectsGroup, TextObjectsGroup
+from engine.camera import Camera
 
 
 PATH_ISOMETRY = Path('isometry')
 PATH_PLATFORMER = Path('platformer')
 
 
-class TestObject(IsometryPhysics, DynamicObject):
-    speed = Speed(3, 6)
-    events_animation_group = EventsAnimationGroup(
-        EventsAnimation(Events(pygame.K_w, pygame.K_a), Animation(PATH_ISOMETRY / Path('walk_up'), is_loop=True)),
-        EventsAnimation(Events(pygame.K_s, pygame.K_d), Animation(PATH_ISOMETRY / Path('walk_down'), is_loop=True)),
-        EventsAnimation(Events(pygame.K_a, pygame.K_s), Animation(PATH_ISOMETRY / Path('walk_left'), is_loop=True)),
-        EventsAnimation(Events(pygame.K_w, pygame.K_d), Animation(PATH_ISOMETRY / Path('walk_right'), is_loop=True)),
-        EventsAnimation(Events(pygame.K_w), Animation(PATH_ISOMETRY / Path('walk_right_up'), is_loop=True)),
-        EventsAnimation(Events(pygame.K_a), Animation(PATH_ISOMETRY / Path('walk_left_up'), is_loop=True)),
-        EventsAnimation(Events(pygame.K_s), Animation(PATH_ISOMETRY / Path('walk_left_down'), is_loop=True)),
-        EventsAnimation(Events(pygame.K_d), Animation(PATH_ISOMETRY / Path('walk_right_down'), is_loop=True)),
-        EventsAnimation(DEFAULT_EVENT, Animation(PATH_ISOMETRY / Path('idle_down'), is_loop=True)),
-    )
-
-
 class TileObject(SolidObject):
     events_animation_group = EventsAnimationGroup(
         EventsAnimation(DEFAULT_EVENT, Animation(PATH_ISOMETRY / Path('tile'), is_loop=True))
+    )
+
+
+class RockHeadObject(SolidObject):
+    events_animation_group = EventsAnimationGroup(
+        EventsAnimation(DEFAULT_EVENT, Animation(PATH_PLATFORMER / Path('rock_head', 'idle'), is_loop=True))
     )
 
 
@@ -43,7 +35,7 @@ class BoxObject(SolidObject):
 
 
 class TestObject1(PlatformerPhysics, DynamicObject):
-    speed = Speed(2, 4, 5, 2.5)
+    speed = Speed(2, 4, 5, 3, fall_boost=0.05)
     events_animation_group = EventsAnimationGroup(
         EventsAnimation(
             FALL_EVENT,
@@ -72,21 +64,26 @@ class TestObject1(PlatformerPhysics, DynamicObject):
 
 
 class Game(Engine):
-    draw_groups = (DynamicObjectsGroup(), SolidObjectsGroup())
+    draw_groups = (DynamicObjectsGroup(), SolidObjectsGroup(), TextObjectsGroup())
+    events_groups = (DynamicObjectsGroup(), SolidObjectsGroup())
+    update_groups = (DynamicObjectsGroup(),)
 
     def __init__(self) -> None:
         tile = TileObject()
         box = BoxObject()
         box1 = BoxObject()
         box2 = BoxObject()
-        tile.rect.center = 700, 550
-        # obj = TestObject()
         obj1 = TestObject1()
-        obj1.rect.center = 600, 600
-        box.rect.center = 2000, 2000
-        box1.rect.center = 1000, 500
-        box2.rect.center = 1500, 1500
-        # obj.rect.center = 500, 500
+        rock1 = RockHeadObject()
+        rock2 = RockHeadObject()
+        self.camera = Camera(obj1, self.draw_groups)
+        obj1.set_rect_for_tile_grid(54, 55, 'center')
+        rock1.set_rect_for_tile_grid(53, 55)
+        tile.set_rect_for_tile_grid(3, 4, 'center')
+        box.set_rect_for_tile_grid(4, 6, 'center')
+        box1.set_rect_for_tile_grid(5, 10, 'center')
+        rock2.set_rect_for_tile_grid(55, 55, 'center')
+        box2.set_rect_for_tile_grid(3, 2, 'center')
 
 
 if __name__ == '__main__':

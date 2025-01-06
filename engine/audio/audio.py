@@ -7,6 +7,8 @@ from engine.metaclasses.singleton import SingletonMeta
 class Audio(metaclass=SingletonMeta):
     """Класс управления звуками и музыкой."""
 
+    mixer.init()
+
     def __init__(self) -> None:
         """Инициализация аудио игрового процесса."""
         self._effects: dict[str, mixer.Sound] = {}

@@ -1,9 +1,12 @@
 from collections import namedtuple
 
 
-ZERO_COORDINATES = (0, 0)
+Coordinate = namedtuple('Coordinate', ('x', 'y'))
 
 Size = namedtuple('Size', ('width', 'height'))
+
 Color = namedtuple('Color', ('red', 'green', 'blue'))
+
+ZERO_COORDINATES = Coordinate(0, 0)
 
 WRITING_ONLY = AttributeError('Атрибут доступен только для записи')

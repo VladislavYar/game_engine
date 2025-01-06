@@ -16,9 +16,10 @@ from engine.utils.events import check_events
 from engine.mixins.management import ManagementMixin
 from engine.constants import WRITING_ONLY
 from engine.settings import Settings
+from engine.constants import Size
 
 if TYPE_CHECKING:
-    from engine.objects import BaseObject
+    from engine.objects import Object
 
 
 class Animation(ManagementMixin):
@@ -36,7 +37,7 @@ class Animation(ManagementMixin):
     _audio: Audio = Audio()
     _empty_frame: Frame = EMPTY_FRAME
     _images: dict[str, Surface] = {}
-    time_between: int = _settings['engine']['time_between_animation_frames']
+    time_between: int = _settings['engine']['time_between']['time_between_animation_frames']
 
     def __init__(
         self,
@@ -47,6 +48,7 @@ class Animation(ManagementMixin):
         flip_x: bool = False,
         flip_y: bool = False,
         flip_by_derection: bool = False,
+        scale: float = _settings['engine']['image_scale'],
     ) -> None:
         """Инициализация анимации.
 
@@ -58,10 +60,11 @@ class Animation(ManagementMixin):
             flip_x (bool, optional): Флаг отражения по горизонтале. По дефолту False.
             flip_y (bool, optional): Флаг отражения по вертикале. По дефолту False.
             flip_by_derection (bool, optional): Флаг поворота анимации по направлению движения. По дефолту False.
+            scale (float, optional): Scale анимации. По дефолту 1.
         """
         path = BasePathEnum.ANIMATIONS_PATH.value / dir
         path_images = self._get_full_path_images(path)
-        self._frames = self._get_frames(path_images, flip_x, flip_y)
+        self._frames = self._get_frames(path_images, flip_x, flip_y, scale)
         self.is_loop = is_loop
         self._flip_by_derection = flip_by_derection
         self.time_between = time_between if time_between else self.time_between
@@ -101,7 +104,7 @@ class Animation(ManagementMixin):
         self._images[path_image] = img
         return img
 
-    def _get_frames(self, path_images: list[str], flip_x: bool, flip_y: bool) -> tuple[Frame]:
+    def _get_frames(self, path_images: list[str], flip_x: bool, flip_y: bool, scale: float) -> tuple[Frame]:
         """Отдаёт список кадров.
 
         Args:
@@ -118,13 +121,10 @@ class Animation(ManagementMixin):
         frames = []
         for path_image in path_images:
             img = transform.flip(self._get_image(path_image), flip_x, flip_y)
+            rect = img.get_frect()
+            img = transform.scale(img, Size(rect.width * scale, rect.height * scale))
             frames.append(Frame(img))
         return tuple(frames)
-
-    def scale(self) -> None:
-        """Изменяет размер кадров анимации под текущий размер экрана."""
-        for frame in self._frames:
-            frame.scale()
 
     def _get_rotation_frame(self, index: int) -> Frame:
         """Отдаёт frame анимации с проверкой на поворот.
@@ -145,7 +145,7 @@ class Animation(ManagementMixin):
         """Отдаёт следующий кадр анимации в зависимости от времени между кадрами.
 
         Args:
-            obj (BaseObject): игровой объект.
+            obj (Object): игровой объект.
 
         Returns:
             Frame: кадр анимации.
@@ -170,10 +170,10 @@ class Animation(ManagementMixin):
         raise WRITING_ONLY
 
     @obj.setter
-    def obj(self, obj: 'BaseObject') -> None:
+    def obj(self, obj: 'Object') -> None:
         """Добавляет игровой объект анимации.
         Args:
-            obj (BaseObject): игровой объект.
+            obj (Object): игровой объект.
         """
         self._obj = obj
 
@@ -245,13 +245,13 @@ class AnimationGroup:
     def __init__(
         self,
         events_animations: EventsAnimationGroup,
-        obj: 'BaseObject',
+        obj: 'Object',
     ) -> None:
         """Инициализация группы анимаций.
 
         Args:
             events_animations (EventsAnimationGroup): группа объектов EventsAnimation.
-            obj (BaseObject): игровой объект.
+            obj (Object): игровой объект.
         """
         self._events_animations = events_animations
         self._default_animation = self._events_animations[DEFAULT_EVENT]
@@ -314,11 +314,6 @@ class AnimationGroup:
         self._check_old_current_animation(pressed)
         self._check_current_animation(pressed)
         self._check_new_animation(pressed)
-
-    def scale(self) -> None:
-        """Изменяет размер кадров анимаций под текущий размер экрана."""
-        for events_animation in self._events_animations:
-            events_animation.animation.scale()
 
     @property
     def frame(self) -> Frame:

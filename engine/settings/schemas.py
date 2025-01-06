@@ -6,21 +6,24 @@ from engine.settings.constants import (
     SCREEN_RESOLUTIONS,
     SCREEN_RESOLUTION_MESSAGE_ERROR,
     MAX_LEN_CAPTION_TITLE,
-    BASE_SCREEN_SIZE_FRAME,
-    BASE_SCREEN_SIZE_ACTION,
-    BASE_SCREEN_SIZE_TEXT,
     BASE_VISIBLE_MAP_SIZE,
     ACCEPTABLE_ICON_FORMATS,
     ACCEPTABLE_FONT_FORMATS,
     NO_FONT_IN_SYSTEM_MESSAGE_ERROR,
-    CoefDropCheckEnum,
+    RectInnerOutlineWidthEnum,
+    DisplayFPSCoordinateEnum,
     RectOutlineWidthEnum,
-    TimeBetweenAnimationActionsEnum,
+    TimeBetweenActionsEnum,
     TimeBetweenAnimationFramesEnum,
     VolumeEnum,
     FPSEnum,
     RGBColorEnum,
     TextSizeEnum,
+    ImageScaleEnum,
+    SizeEnum,
+    ColumnsRowsEnum,
+    RectInnerOutlineRGBColorEnum,
+    RectOutlineRGBColorEnum,
 )
 from engine.utils.file import validate_format_file
 from engine.settings.types import TYPES_SETTINGS
@@ -40,7 +43,7 @@ class BaseSettingsSchema(BaseModel):
             TYPES_SETTINGS: настройка.
         """
         value = getattr(self, key)
-        if isinstance(value, BaseModel):
+        if isinstance(value, BaseModel) and not isinstance(value, BaseSettingsSchema):
             return tuple(value.model_dump().values())
         return value
 
@@ -52,6 +55,21 @@ class BaseSettingsSchema(BaseModel):
             value (TYPES_SETTINGS): значение настройки.
         """
         setattr(self, key, value)
+
+
+class SizeSchema(BaseModel):
+    """Схема размера."""
+
+    width: int = Field(
+        default=SizeEnum.DEFAULT_SIZE,
+        ge=SizeEnum.MIN_SIZE,
+        description='Ширина',
+    )
+    height: int = Field(
+        default=SizeEnum.DEFAULT_SIZE,
+        ge=SizeEnum.MIN_SIZE,
+        description='Высота',
+    )
 
 
 class ScreenResolutionSchema(BaseModel):
@@ -99,27 +117,24 @@ class RGBColorSchema(BaseModel):
     )
 
 
+class CoordinateSchema(BaseModel):
+    """Схема координатов."""
+
+    x: int = Field(description='Координата x')
+    y: int = Field(description='Координата y')
+
+
 class GraphicsSettingsSchema(BaseSettingsSchema):
     """Схема настроек графики."""
 
     screen_resolution: ScreenResolutionSchema = Field(
-        default_factory=lambda: GraphicsSettingsSchema.get_default_screen_resolution(),
+        default=ScreenResolutionSchema(width=get_monitors()[0].width, height=get_monitors()[0].height),
         description='Разрешение экрана',
     )
     fullscreen: bool = Field(default=True, description='Флаг полного экрана')
     max_fps: int = Field(
         default=FPSEnum.MAX_FPS, le=FPSEnum.MAX_FPS, ge=FPSEnum.MIN_FPS, description='Максимальная частота кадров'
     )
-
-    @staticmethod
-    def get_default_screen_resolution() -> ScreenResolutionSchema:
-        """Отдаёт дефолтное значение разрешение экрана.
-
-        Returns:
-            ScreenResolutionSchema: разрешение экрана.
-        """
-        monitor = get_monitors()[0]
-        return ScreenResolutionSchema(width=monitor.width, height=monitor.height)
 
 
 class AudioSettingsSchema(BaseSettingsSchema):
@@ -145,44 +160,32 @@ class AudioSettingsSchema(BaseSettingsSchema):
     )
 
 
-class EngineSettingsSchema(BaseSettingsSchema):
-    """Схема настроек движка."""
+class TimeBetweenSchema(BaseSettingsSchema):
+    """Схема времени между кадров."""
 
-    caption_title: str | None = Field(
-        default=None, description='Заголовок окна игры', max_length=MAX_LEN_CAPTION_TITLE
-    )
-    path_icon: FilePath | None = Field(default=None, alias='name_icon', description='Название иконки окна игры')
     time_between_animation_frames: int = Field(
         default=TimeBetweenAnimationFramesEnum.DEFAULT_TIME,
         ge=TimeBetweenAnimationFramesEnum.MIN_TIME,
         le=TimeBetweenAnimationFramesEnum.MAX_TIME,
         description='Время между кадрами анимаций',
     )
-    time_between_animation_actions: int = Field(
-        default=TimeBetweenAnimationActionsEnum.DEFAULT_TIME,
-        ge=TimeBetweenAnimationActionsEnum.MIN_TIME,
-        le=TimeBetweenAnimationActionsEnum.MAX_TIME,
+    time_between_actions: int = Field(
+        default=TimeBetweenActionsEnum.DEFAULT_TIME,
+        ge=TimeBetweenActionsEnum.MIN_TIME,
+        le=TimeBetweenActionsEnum.MAX_TIME,
         description='Время между действиями',
     )
-    base_screen_size_frame: ScreenResolutionSchema = Field(
-        default_factory=lambda: EngineSettingsSchema.get_base_screen_size_frame(),
-        description='Базовое разрешение экрана расчёта размера фрейма',
-    )
-    base_screen_size_action: ScreenResolutionSchema = Field(
-        default_factory=lambda: EngineSettingsSchema.get_base_screen_size_action(),
-        description='Базовое разрешение экрана расчёта скорости действия',
-    )
-    base_screen_size_text: ScreenResolutionSchema = Field(
-        default_factory=lambda: EngineSettingsSchema.get_base_screen_size_text(),
-        description='Базовое разрешение экрана расчёта размера текста',
-    )
-    base_visible_map_size: ScreenResolutionSchema = Field(
-        default_factory=lambda: EngineSettingsSchema.get_base_visible_map_size(),
-        description='Базовый размер видимой игровой карты',
-    )
-    debug_mode: bool = Field(default=False, description='Флаг debug mode')
+
+
+class RectOutlineSchema(BaseSettingsSchema):
+    """Схема обводки rect."""
+
     rect_outline_color: RGBColorSchema = Field(
-        default_factory=lambda: EngineSettingsSchema.get_rect_outline_color(),
+        default=RGBColorSchema(
+            red=RectOutlineRGBColorEnum.DEFAULT_RED,
+            green=RectOutlineRGBColorEnum.DEFAULT_GREEN,
+            blue=RectOutlineRGBColorEnum.DEFAULT_BLUE,
+        ),
         description='Цвет обводки rect',
     )
     rect_outline_width: int = Field(
@@ -191,14 +194,31 @@ class EngineSettingsSchema(BaseSettingsSchema):
         le=RectOutlineWidthEnum.MAX_WIDTH,
         description='Ширина обводки rect',
     )
-    coef_drop_check: float = Field(
-        default=CoefDropCheckEnum.DEFAULT_COEF.value,
-        ge=CoefDropCheckEnum.MIN_COEF.value,
-        le=CoefDropCheckEnum.MAX_COEF.value,
-        description='Коэффициент к проверке падения',
+    rect_inner_outline_color: RGBColorSchema = Field(
+        default=RGBColorSchema(
+            red=RectInnerOutlineRGBColorEnum.DEFAULT_RED,
+            green=RectInnerOutlineRGBColorEnum.DEFAULT_GREEN,
+            blue=RectInnerOutlineRGBColorEnum.DEFAULT_BLUE,
+        ),
+        description='Цвет внутренний обводки rect',
     )
+    rect_inner_outline_width: int = Field(
+        default=RectInnerOutlineWidthEnum.DEFAULT_WIDTH,
+        ge=RectInnerOutlineWidthEnum.MIN_WIDTH,
+        le=RectInnerOutlineWidthEnum.MAX_WIDTH,
+        description='Ширина внутренний обводки rect',
+    )
+
+
+class TextSchema(BaseSettingsSchema):
+    """Схема текста."""
+
     text_color: RGBColorSchema = Field(
-        default_factory=lambda: EngineSettingsSchema.get_text_color(),
+        default=RGBColorSchema(
+            red=RGBColorEnum.DEFAULT_RED,
+            green=RGBColorEnum.DEFAULT_GREEN,
+            blue=RGBColorEnum.DEFAULT_BLUE,
+        ),
         description='Цвет текста',
     )
     text_size: int = Field(
@@ -209,7 +229,7 @@ class EngineSettingsSchema(BaseSettingsSchema):
     )
     path_fount: FilePath | None = Field(default=None, description='Путь до ширифта')
     name_fount: str = Field(
-        default_factory=lambda: EngineSettingsSchema._correct_name_fount(font.get_default_font()),
+        default_factory=lambda: TextSchema._correct_name_fount(font.get_default_font()),
         description='Название ширифта',
     )
 
@@ -225,75 +245,6 @@ class EngineSettingsSchema(BaseSettingsSchema):
         """
         return ''.join(name_fount.lower().split()).split('.')[0]
 
-    @staticmethod
-    def get_rect_outline_color() -> RGBColorSchema:
-        """Отдаёт цвет обводки rect.
-
-        Returns:
-            RGBColorSchema: цвет обводки rect.
-        """
-        return RGBColorSchema(
-            red=RGBColorEnum.DEFAULT_RED,
-            green=RGBColorEnum.DEFAULT_GREEN,
-            blue=RGBColorEnum.DEFAULT_BLUE,
-        )
-
-    @staticmethod
-    def get_text_color() -> RGBColorSchema:
-        """Отдаёт цвет текста.
-
-        Returns:
-            RGBColorSchema: отдаёт цвет текста.
-        """
-        return RGBColorSchema(
-            red=RGBColorEnum.DEFAULT_RED,
-            green=RGBColorEnum.DEFAULT_GREEN,
-            blue=RGBColorEnum.DEFAULT_BLUE,
-        )
-
-    @staticmethod
-    def get_base_screen_size_frame() -> ScreenResolutionSchema:
-        """Отдаёт базовое значение разрешения экрана расчёта размера фрейма.
-
-        Returns:
-            ScreenResolutionSchema: разрешение экрана.
-        """
-        return ScreenResolutionSchema(width=BASE_SCREEN_SIZE_FRAME.width, height=BASE_SCREEN_SIZE_FRAME.height)
-
-    @staticmethod
-    def get_base_screen_size_action() -> ScreenResolutionSchema:
-        """Отдаёт базовое значение разрешения экрана расчёта скорости действия.
-
-        Returns:
-            ScreenResolutionSchema: разрешение экрана.
-        """
-        return ScreenResolutionSchema(width=BASE_SCREEN_SIZE_ACTION.width, height=BASE_SCREEN_SIZE_ACTION.height)
-
-    @staticmethod
-    def get_base_screen_size_text() -> ScreenResolutionSchema:
-        """Отдаёт базовое значение разрешения экрана расчёта размера текста.
-
-        Returns:
-            ScreenResolutionSchema: разрешение экрана.
-        """
-        return ScreenResolutionSchema(width=BASE_SCREEN_SIZE_TEXT.width, height=BASE_SCREEN_SIZE_TEXT.height)
-
-    @staticmethod
-    def get_base_visible_map_size() -> ScreenResolutionSchema:
-        """Отдаёт базовое значение размера видимой игровой карты.
-
-        Returns:
-            ScreenResolutionSchema: разрешение экрана.
-        """
-        return ScreenResolutionSchema(width=BASE_VISIBLE_MAP_SIZE.width, height=BASE_VISIBLE_MAP_SIZE.height)
-
-    @field_validator('path_icon', mode='before')
-    @classmethod
-    def validate_path_icon(cls, value: str) -> str:
-        """Фомирование путь до иконки окна игры и валидирует тип файла."""
-        validate_format_file(value, ACCEPTABLE_ICON_FORMATS)
-        return BasePathEnum.ICONS_PATH.value / value
-
     @field_validator('path_fount', mode='before')
     @classmethod
     def validate_path_fount(cls, value: FilePath) -> FilePath:
@@ -308,6 +259,106 @@ class EngineSettingsSchema(BaseSettingsSchema):
         if cls._correct_name_fount(value) in font.get_fonts():
             return value
         raise ValueError(NO_FONT_IN_SYSTEM_MESSAGE_ERROR.format(value))
+
+
+class TileGridSchema(RectOutlineSchema):
+    """Схема сетки тайтлов."""
+
+    columns: int = Field(
+        description='Количество столбцов',
+        default=ColumnsRowsEnum.DEFAULT_COUNT,
+        ge=ColumnsRowsEnum.MIN_COUNT,
+    )
+    rows: int = Field(
+        description='Количество строк',
+        default=ColumnsRowsEnum.DEFAULT_COUNT,
+        ge=ColumnsRowsEnum.MIN_COUNT,
+    )
+    tile_size: SizeSchema = Field(
+        default=SizeSchema(width=SizeEnum.DEFAULT_SIZE, height=SizeEnum.DEFAULT_SIZE),
+        description='Размер тайтла',
+    )
+
+
+class EngineSettingsSchema(BaseSettingsSchema):
+    """Схема настроек движка."""
+
+    caption_title: str | None = Field(
+        default=None, description='Заголовок окна игры', max_length=MAX_LEN_CAPTION_TITLE
+    )
+    path_icon: FilePath | None = Field(default=None, alias='name_icon', description='Название иконки окна игры')
+    base_visible_map_size: ScreenResolutionSchema = Field(
+        default=ScreenResolutionSchema(width=BASE_VISIBLE_MAP_SIZE.width, height=BASE_VISIBLE_MAP_SIZE.height),
+        description='Базовый размер видимой игровой карты',
+    )
+    time_between: TimeBetweenSchema = Field(
+        default=TimeBetweenSchema(
+            time_between_animation_frames=TimeBetweenAnimationFramesEnum.DEFAULT_TIME,
+            time_between_actions=TimeBetweenActionsEnum.DEFAULT_TIME,
+        ),
+        description='Время между кадрами',
+    )
+    debug_mode: bool = Field(default=False, description='Флаг debug mode')
+    rect_outline: RectOutlineSchema = Field(
+        default=RectOutlineSchema(
+            rect_outline_color=RGBColorSchema(
+                red=RGBColorEnum.DEFAULT_RED,
+                green=RGBColorEnum.DEFAULT_GREEN,
+                blue=RGBColorEnum.DEFAULT_BLUE,
+            ),
+            rect_outline_width=RectOutlineWidthEnum.DEFAULT_WIDTH,
+            rect_inner_outline_color=RGBColorSchema(
+                red=RGBColorEnum.DEFAULT_RED,
+                green=RGBColorEnum.DEFAULT_GREEN,
+                blue=RGBColorEnum.DEFAULT_BLUE,
+            ),
+            rect_inner_outline_width=RectOutlineWidthEnum.DEFAULT_WIDTH,
+        ),
+        description='Обводка rect',
+    )
+    text: TextSchema = Field(
+        default=TextSchema(
+            text_color=RGBColorSchema(
+                red=RGBColorEnum.DEFAULT_RED,
+                green=RGBColorEnum.DEFAULT_GREEN,
+                blue=RGBColorEnum.DEFAULT_BLUE,
+            ),
+            text_size=TextSizeEnum.DEFAULT_SIZE,
+            name_fount=TextSchema._correct_name_fount(font.get_default_font()),
+        ),
+        description='Текст',
+    )
+    image_scale: float = Field(
+        default=ImageScaleEnum.DEFAULT_SCALE.value,
+        ge=ImageScaleEnum.MIN_SCALE.value,
+        le=ImageScaleEnum.MAX_SCALE.value,
+        description='Scale изображений',
+    )
+    display_fps_coordinate: CoordinateSchema = Field(
+        default=CoordinateSchema(x=DisplayFPSCoordinateEnum.X, y=DisplayFPSCoordinateEnum.Y),
+        description='Координаты вывода fps',
+    )
+    tile_grid: TileGridSchema = Field(
+        default=TileGridSchema(
+            columns=ColumnsRowsEnum.DEFAULT_COUNT,
+            rows=ColumnsRowsEnum.DEFAULT_COUNT,
+            tile_size=SizeSchema(width=SizeEnum.DEFAULT_SIZE, height=SizeEnum.DEFAULT_SIZE),
+            rect_outline_color=RGBColorSchema(
+                red=RGBColorEnum.DEFAULT_RED,
+                green=RGBColorEnum.DEFAULT_GREEN,
+                blue=RGBColorEnum.DEFAULT_BLUE,
+            ),
+            rect_outline_width=RectOutlineWidthEnum.DEFAULT_WIDTH,
+        ),
+        description='Сетка тайтлов',
+    )
+
+    @field_validator('path_icon', mode='before')
+    @classmethod
+    def validate_path_icon(cls, value: str) -> str:
+        """Фомирование путь до иконки окна игры и валидирует тип файла."""
+        validate_format_file(value, ACCEPTABLE_ICON_FORMATS)
+        return BasePathEnum.ICONS_PATH.value / value
 
 
 class AllSettingsSchema(BaseModel):

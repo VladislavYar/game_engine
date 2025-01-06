@@ -1,3 +1,3 @@
-from engine.objects.objects import BaseObject, SolidObject, DynamicObject, Speed
+from engine.objects.objects import Object, SolidObject, DynamicObject, Speed
 
-__all__ = ('BaseObject', 'SolidObject', 'DynamicObject', 'Speed')
+__all__ = ('Object', 'SolidObject', 'DynamicObject', 'Speed')

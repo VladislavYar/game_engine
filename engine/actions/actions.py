@@ -1,18 +1,16 @@
 from typing import TYPE_CHECKING, Iterator
 from dataclasses import dataclass
-from functools import lru_cache
 
 from engine.events import Events, Pressed
 from engine.audio import Audio
 from engine.utils.events import check_events
-from engine.constants import Size
 from engine.mixins.management import ManagementMixin
 from engine.settings import Settings
 from engine.constants.direction import DirectionGroupEnum
 
 if TYPE_CHECKING:
     from engine.objects.groups import BaseGroup
-    from engine.objects import BaseObject
+    from engine.objects import Object
 
 
 class Action(ManagementMixin):
@@ -26,7 +24,7 @@ class Action(ManagementMixin):
 
     _settings: Settings = Settings()
     _audio: Audio = Audio()
-    time_between: int = _settings['engine']['time_between_animation_actions']
+    time_between: int = _settings['engine']['time_between']['time_between_actions']
 
     def __init__(
         self,
@@ -56,41 +54,20 @@ class Action(ManagementMixin):
             return 1
         return count_actions_performed
 
-    def perform(self, obj: 'BaseObject') -> None:
+    def perform(self, obj: 'Object') -> None:
         """Совершает действие.
 
         Args:
-            obj (BaseObject): игровой объект над которым совершается действие.
+            obj (Object): игровой объект над которым совершается действие.
         """
 
 
 class DynamicAction(Action):
-    """Класс представляющий динамическое действие.
-
-    Attributes:
-        base_screen_size (Size): базовый размер экрана для вычисления скорости.
-        base_visible_map_size (Size): базовый размер видимой карты.
-    """
-
-    base_screen_size: Size = Size(*Action._settings['engine']['base_screen_size_action'])
-    base_visible_map_size: Size = Size(*Action._settings['engine']['base_visible_map_size'])
-
-    @classmethod
-    @lru_cache
-    def _get_coef(cls, width: int, height: int) -> tuple[float, float]:
-        """Отдаёт коэффициент разности размера видимой карты от базового разрешения.
-
-        Args:
-            width (int): ширина видимой карты.
-            height (int): высота видимой карты.
-        Returns:
-            tuple[float, float]: коэффициент разности размера видимой карты от базового разрешения.
-        """
-        return width / cls.base_screen_size.width, height / cls.base_screen_size.height
+    """Класс представляющий динамическое действие."""
 
     def _push_out_object(
         self,
-        obj: 'BaseObject',
+        obj: 'Object',
         group: 'BaseGroup',
         direction: DirectionGroupEnum,
         sing_x_y: tuple[int, int],
@@ -98,19 +75,19 @@ class DynamicAction(Action):
         """Метод выталкивания объекта.
 
         Args:
-            obj (BaseObject): объект для выталкивания.
+            obj (Object): объект для выталкивания.
             group (BaseGroup): группа для проверки коллизии.
             direction (DirectionGroupEnum): направление проверки коллизии.
             sing_x_y (tuple[int, int]): направление выталкивания.
         """
-        if sprite := group.collide_side_mask(obj, direction):
+        if sprite_coordinate := group.collide_side_mask(obj, direction):
             sign_x, sign_y = sing_x_y
             while True:
                 obj.rect.y -= sign_y
                 obj.rect.x -= sign_x
-                if not obj.collide_side_mask(sprite, direction):
-                    obj.rect.y -= sign_y
-                    obj.rect.x -= sign_x
+                if not obj.collide_side_rect_with_mask(sprite_coordinate[0], direction):
+                    obj.rect.y += sign_y
+                    obj.rect.x += sign_x
                     break
 
 
@@ -176,11 +153,11 @@ class EventsActionGroup:
 class ActiveActions:
     """Класс активных действий."""
 
-    def __init__(self, obj: 'BaseObject') -> None:
+    def __init__(self, obj: 'Object') -> None:
         """Инициализация объекта активных действий.
 
         Args:
-            obj (BaseObject): игровой объект.
+            obj (Object): игровой объект.
         """
         self._obj = obj
         self._active_actions: dict[Events, Action] = {}
@@ -214,13 +191,13 @@ class ActionGroup:
     def __init__(
         self,
         events_actions: EventsActionGroup,
-        obj: 'BaseObject',
+        obj: 'Object',
     ) -> None:
         """Инициализация группы действий.
 
         Args:
             events_actions (EventsActionGroup): группа объектов EventsAction.
-            obj (BaseObject): игровой объект.
+            obj (Object): игровой объект.
         """
         self._events_actions = events_actions
         self._active_actions = ActiveActions(obj)

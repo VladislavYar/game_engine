@@ -4,36 +4,38 @@ from pygame import sprite, mask as mk
 
 from engine.animations import AnimationGroup, EventsAnimationGroup
 from engine.actions import EventsActionGroup, ActionGroup
-from engine.objects.groups import AllObjectsGroup, BaseGroup, SolidObjectsGroup, DynamicObjectsGroup
+from engine.objects.groups import SolidObjectsGroup, DynamicObjectsGroup
 from engine.events import Pressed
-from engine.constants import ZERO_COORDINATES
-from engine.constants.empty import EMPTY_FRAME
+from engine.constants import Coordinate, ZERO_COORDINATES
 from engine.objects.dataclasses import Speed, Status
 from engine.constants.direction import DirectionGroupEnum
+from engine.tile_grid import TileGrid
+from engine.objects.base_object import BaseObject
+from engine.constants.empty import EMPTY_FRAME
 
 
-class BaseObject(sprite.Sprite):
-    """Базовый объект игрового процесса.
+class Object(BaseObject):
+    """Объект игрового процесса.
 
     Attributes:
-        _all_objects_group (AllObjectsGroup): группа всех игровых объектов.
-        groups (tuple[BaseGroup, ...]): кортеж групп игровых объектов. По дефолту tuple.
+        _tile_grid (TileGrid): сетка тайтлов.
         events_action_group (EventsActionGroup): группа событий и связанных с ними действий.
             По дефолту пустой EventsActionGroup.
         events_animation_group (EventsAnimationGroup): группа событий и связанных с ними анимаций.
     """
 
-    _all_objects_group = AllObjectsGroup()
-    groups: tuple[BaseGroup, ...] = tuple()
+    _tile_grid: TileGrid = TileGrid()
     events_action_group: EventsActionGroup = EventsActionGroup()
     events_animation_group: EventsAnimationGroup
 
     def __init__(self) -> None:
-        """Инициализация базового объекта."""
-        super().__init__(self._all_objects_group, *self.groups)
+        """Инициализация объекта."""
+        super().__init__()
         self._set_default_values()
         self._animation_group = AnimationGroup(events_animations=deepcopy(self.events_animation_group), obj=self)
         self._actions_group = ActionGroup(events_actions=deepcopy(self.events_action_group), obj=self)
+        self.events(Pressed())
+        self.update()
 
     def _set_default_values(self) -> None:
         """Устанавливает дефолтные значения для игрового объекта."""
@@ -42,7 +44,18 @@ class BaseObject(sprite.Sprite):
         self.rect = self.image.get_frect()
         self.rect.center = ZERO_COORDINATES
         self.mask = mk.from_surface(self.image)
+        self.rect_mask = self.mask
         self.direction: DirectionGroupEnum | None = None
+
+    def set_rect_for_tile_grid(self, row: int, column: int, position: str = 'center') -> None:
+        """Устанавливает rect по позиции в тайтл сетке.
+
+        Args:
+            row (int): строка.
+            column (int): колонка.
+            position (str, optional): позиция rect. По дефолту 'center'.
+        """
+        setattr(self.rect, position, Coordinate(*getattr(self._tile_grid[row][column].rect, position)))
 
     def events(self, pressed: Pressed) -> None:
         """Проверка совершённых событий.
@@ -62,20 +75,17 @@ class BaseObject(sprite.Sprite):
         self.rect = frame.rect
         self.rect.center = rect_center
         self.mask = frame.mask
+        self.rect_mask = frame.rect_mask
 
     def update(self) -> None:
         """Логика обновления спрайта."""
         self._new_frame()
 
-    def scale(self) -> None:
-        """Изменяет размер объекта под текущий размер экрана."""
-        self._animation_group.scale()
-
-    def _get_collision_side(self, obj: 'BaseObject') -> DirectionGroupEnum:
+    def _get_collision_side(self, obj: 'Object') -> DirectionGroupEnum:
         """Отдаёт сторону коллизии.
 
         Args:
-            obj ('BaseObject'): объект для проверки стороны коллизии.
+            obj ('Object'): объект для проверки стороны коллизии.
 
         Returns:
             DirectionGroupEnum: сторона коллизии.
@@ -84,53 +94,54 @@ class BaseObject(sprite.Sprite):
             return DirectionGroupEnum.DOWN
         elif self.rect.top <= obj.rect.bottom and self.rect.top >= obj.rect.bottom - obj.rect.height:
             return DirectionGroupEnum.UP
-        elif self.rect.right >= obj.rect.left and self.rect.left <= obj.rect.left:
+        if self.rect.right >= obj.rect.left and self.rect.left <= obj.rect.left:
             return DirectionGroupEnum.RIGHT
-        elif self.rect.left <= obj.rect.right and self.rect.right >= obj.rect.right:
+        if self.rect.left <= obj.rect.right and self.rect.right >= obj.rect.right:
             return DirectionGroupEnum.LEFT
 
-    def collide_side_rect_with_mask(self, obj: 'BaseObject', side: DirectionGroupEnum) -> bool:
+    def collide_side_rect_with_mask(self, obj: 'Object', side: DirectionGroupEnum) -> Coordinate | None:
         """Проверяет сторону коллизии rect объекта c маской другого объекта.
 
         Args:
-            obj (BaseObject): объект для проверки коллизии.
+            obj (Object): объект для проверки коллизии.
             side (DirectionGroupEnum): сторона для проверки.
 
         Returns:
-            bool: флаг коллизии.
+            Coordinate | None: координаты коллизии.
         """
         if not self.rect.colliderect(obj.rect):
-            return False
-        xoffset = obj.rect[0] - self.rect[0]
-        yoffset = obj.rect[1] - self.rect[1]
-        if self.mask.overlap(obj.mask, (xoffset, yoffset)) and self._get_collision_side(obj) == side:
-            return True
-        return False
+            return
+        offset = (self.rect.x - obj.rect.x, self.rect.y - obj.rect.y)
+        coordinate = obj.mask.overlap(self.rect_mask, offset)
+        if coordinate and self._get_collision_side(obj) == side:
+            return Coordinate(*coordinate)
+        return
 
-    def collide_side_mask(self, obj: 'BaseObject', side: DirectionGroupEnum) -> bool:
+    def collide_side_mask(self, obj: 'Object', side: DirectionGroupEnum) -> Coordinate | None:
         """Проверяет коллизию по маске с объектом с определённой стороны.
 
         Args:
-            obj (BaseObject): объект для проверки коллизии.
+            obj (Object): объект для проверки коллизии.
             side (DirectionGroupEnum): сторона для проверки.
 
         Returns:
-            bool: флаг коллизии.
+            Coordinate | None: координаты коллизии.
         """
         if not self.rect.colliderect(obj.rect):
-            return False
-        if sprite.collide_mask(self, obj) and self._get_collision_side(obj) == side:
-            return True
-        return False
+            return
+        coordinate = sprite.collide_mask(self, obj)
+        if coordinate and self._get_collision_side(obj) == side:
+            return Coordinate(*coordinate)
+        return
 
 
-class SolidObject(BaseObject):
+class SolidObject(Object):
     """Класс твёрдого объекта."""
 
     groups: tuple[SolidObjectsGroup] = (SolidObjectsGroup(),)
 
 
-class DynamicObject(BaseObject):
+class DynamicObject(Object):
     """Класс динамического объекта.
 
     Attributes:

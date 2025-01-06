@@ -10,14 +10,9 @@ SCREEN_RESOLUTIONS = (
     Size(1366, 768),
     Size(1600, 900),
     Size(1920, 1080),
-    Size(2160, 1080),
     Size(2560, 1440),
-    Size(2960, 1440),
-    Size(3200, 1800),
     Size(3840, 2160),
 )
-
-BASE_SCREEN_SIZE_FRAME = BASE_SCREEN_SIZE_ACTION = BASE_SCREEN_SIZE_TEXT = SCREEN_RESOLUTIONS[0]
 
 BASE_VISIBLE_MAP_SIZE = SCREEN_RESOLUTIONS[-1]
 
@@ -42,7 +37,7 @@ class TimeBetweenAnimationFramesEnum(IntEnum):
     MAX_TIME = 1000
 
 
-class TimeBetweenAnimationActionsEnum(IntEnum):
+class TimeBetweenActionsEnum(IntEnum):
     """Enum промежуток времени между действиями."""
 
     DEFAULT_TIME = 50
@@ -58,18 +53,38 @@ class RectOutlineWidthEnum(IntEnum):
     MAX_WIDTH = 10
 
 
-class CoefDropCheckEnum(Enum):
-    """Enum коэффициента к проверке падения."""
+class RectInnerOutlineWidthEnum(IntEnum):
+    """Enum ширины внутренний обводки rect."""
 
-    DEFAULT_COEF = 1
-    MIN_COEF = 1
-    MAX_COEF = 10
+    DEFAULT_WIDTH = 2
+    MIN_WIDTH = 0
+    MAX_WIDTH = 10
 
 
 class RGBColorEnum(IntEnum):
     """Enum RGB цвета."""
 
     DEFAULT_RED = 255
+    DEFAULT_GREEN = DEFAULT_RED
+    DEFAULT_BLUE = DEFAULT_GREEN
+    MIN_COLOR = 0
+    MAX_COLOR = 255
+
+
+class RectOutlineRGBColorEnum(IntEnum):
+    """Enum RGB цвета обводки rect."""
+
+    DEFAULT_RED = 200
+    DEFAULT_GREEN = DEFAULT_RED
+    DEFAULT_BLUE = DEFAULT_GREEN
+    MIN_COLOR = 0
+    MAX_COLOR = 255
+
+
+class RectInnerOutlineRGBColorEnum(IntEnum):
+    """Enum RGB цвета обводки rect."""
+
+    DEFAULT_RED = 100
     DEFAULT_GREEN = DEFAULT_RED
     DEFAULT_BLUE = DEFAULT_GREEN
     MIN_COLOR = 0
@@ -105,3 +120,32 @@ class TextSizeEnum(IntEnum):
     DEFAULT_SIZE = 18
     MIN_SIZE = 1
     MAX_SIZE = 100
+
+
+class ImageScaleEnum(Enum):
+    """Enum scale изображений."""
+
+    DEFAULT_SCALE = 1
+    MIN_SCALE = 1
+    MAX_SCALE = 100
+
+
+class DisplayFPSCoordinateEnum(IntEnum):
+    """Enum координат вывода fps."""
+
+    X = 30
+    Y = 30
+
+
+class SizeEnum(IntEnum):
+    """Enum размеров."""
+
+    DEFAULT_SIZE = 32
+    MIN_SIZE = 0
+
+
+class ColumnsRowsEnum(IntEnum):
+    """Enum столбцов и строчек."""
+
+    DEFAULT_COUNT = 500
+    MIN_COUNT = 1

@@ -9,7 +9,10 @@ from engine.metaclasses.engine import EngineMeta
 from engine.objects.groups import AllObjectsGroup, BaseGroup
 from engine.time import GlobalClock
 from engine.utils.screen import get_sreen_resolution
-from engine.text import Text
+from engine.objects.text import Text
+from engine.tile_grid import TileGrid
+from engine.constants import Coordinate
+from engine.camera import Camera
 
 
 class Engine(QuitMixin, SetSettingsMixin, metaclass=EngineMeta):
@@ -17,26 +20,38 @@ class Engine(QuitMixin, SetSettingsMixin, metaclass=EngineMeta):
 
     Attributes:
         visible_map (Surface): отображение видимой части карты.
+        events_groups (Iterable[BaseGroup]): группы для проверки событий. Проверяются в порядке индекса.
+        update_groups (Iterable[BaseGroup]): группы для обновления. Обновляются в порядке индекса.
         draw_groups (Iterable[BaseGroup]): группы для вывода. Выводятся в порядке индекса.
+        camera: (Camera | None, optional): игровая камера. По дефолту None.
         _global_clock (GlobalClock): объект глобальных часов игрового процесса.
         _audio (Audio): объект для работы с аудио.
         _settings (Settings): объект настроек игрового процесса.
         _all_objects_group (AllObjectsGroup): группа всех игровых объектов.
+        _tile_grid (TileGrid): сетка тайтлов.
+        _display_fps (Surface): отображение fps.
     """
 
     visible_map: Surface
+    events_groups: Iterable[BaseGroup]
+    update_groups: Iterable[BaseGroup]
     draw_groups: Iterable[BaseGroup]
+    camera: Camera | None = None
     _global_clock: GlobalClock = GlobalClock()
     _audio: Audio = Audio()
     _settings: Settings = Settings()
     _all_objects_group: AllObjectsGroup = AllObjectsGroup()
+    _tile_grid: TileGrid = TileGrid()
+    _display_fps = Text()
+    _display_fps.rect.center = Coordinate(*_settings['engine']['display_fps_coordinate'])
 
     def _debug_mode(self) -> None:
         """Веbug mode."""
         if not self._settings['engine']['debug_mode']:
             return
-        fps = Text(text=f'{int(self._global_clock.get_fps())}')
-        self.visible_map.blit(fps.text, fps.rect)
+        self._display_fps.text = f'{int(self._global_clock.get_fps())}'
+        self.visible_map.blit(self._display_fps.text, self._display_fps.rect)
+        self.visible_map.blit(self._tile_grid.surface, self._tile_grid.rect)
 
     def _get_events(self) -> dict[int, event.Event]:
         """Отдаёт события в виде словаря.
@@ -50,11 +65,15 @@ class Engine(QuitMixin, SetSettingsMixin, metaclass=EngineMeta):
         """Проверка событий, совершённых пользователем."""
         events = self._get_events()
         self._check_quit(events)
-        self._all_objects_group.events()
+        for group in self.events_groups:
+            group.events()
 
     def _update(self) -> None:
         """Обновление объектов."""
-        self._all_objects_group.update()
+        for group in self.update_groups:
+            group.update()
+        if self.camera:
+            self.camera.update()
 
     def _draw(self) -> None:
         """Вывод элементов на дисплей."""

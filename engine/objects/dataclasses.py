@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from pygame import mouse
 
 if TYPE_CHECKING:
-    from engine.objects import BaseObject
+    from engine.objects import Object
 
 
 @dataclass
@@ -16,12 +16,20 @@ class Speed:
         run (int, optional): скорость бега. По дефолту 0.
         squat (int, optional): скорость в присяде. По дефолту 0.
         fall (int, optional): скорость падения. По дефолту 0.
+        walk_boost (int, optional): ускорение ходьбы. По дефолту 0.
+        run_boost (int, optional): ускорение бега. По дефолту 0.
+        squat_boost (int, optional): ускорение в присяде. По дефолту 0.
+        fall_boost (int, optional): ускорение падения. По дефолту 0.
     """
 
     walk: int = 0
     run: int = 0
     squat: int = 0
     fall: int = 0
+    walk_boost: int = 0
+    run_boost: int = 0
+    squat_boost: int = 0
+    fall_boost: int = 0
 
 
 @dataclass
@@ -29,7 +37,7 @@ class Status:
     """Cтатусы объекта.
 
     Attributes:
-        obj (BaseObject): игровой объект.
+        obj (Object): игровой объект.
         inactive (bool): статус неактивности.
         focus (bool): статус фокуса.
         jump (bool): статус прыжка.
@@ -39,7 +47,7 @@ class Status:
         death (bool): статус смерти.
     """
 
-    _obj: 'BaseObject'
+    _obj: 'Object'
     inactive: bool = False
     focus: bool = False
     jump: bool = False

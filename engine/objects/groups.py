@@ -7,10 +7,10 @@ from engine.events import Pressed
 from engine.metaclasses.singleton import SingletonMeta
 from engine.constants.direction import DirectionGroupEnum
 from engine.settings import Settings
-from engine.constants import Color
+from engine.constants import Color, Coordinate
 
 if TYPE_CHECKING:
-    from engine.objects import BaseObject
+    from engine.objects import Object
 
 
 class BaseGroup(Group, metaclass=SingletonMeta):
@@ -22,57 +22,62 @@ class BaseGroup(Group, metaclass=SingletonMeta):
 
     _settings: Settings = Settings()
 
-    def collide_side_rect_with_mask(self, obj: 'BaseObject', side: DirectionGroupEnum) -> Optional['BaseObject']:
+    def collide_side_rect_with_mask(
+        self,
+        obj: 'Object',
+        side: DirectionGroupEnum,
+    ) -> Optional[tuple['Object', Coordinate]]:
         """Проверяет коллизию rect объекта с масками группы объектов с определённой стороны.
 
         Args:
-            obj (BaseObject): объект для проверки коллизии.
+            obj (Object): объект для проверки коллизии.
             side (DirectionGroupEnum): сторона для проверки.
 
         Returns:
-            Optional[BaseObject]: объект, с которым произошла коллизия.
+            Optional[tuple[Object, Coordinate]]: координаты коллизии и объект, с которым произошла коллизия.
         """
         for sprite in self.sprites():
-            if obj.collide_side_rect_with_mask(sprite, side):
-                return sprite
+            if coordinate := obj.collide_side_rect_with_mask(sprite, side):
+                return sprite, coordinate
 
-    def collide_side_mask(self, obj: 'BaseObject', side: DirectionGroupEnum) -> Optional['BaseObject']:
+    def collide_side_mask(
+        self,
+        obj: 'Object',
+        side: DirectionGroupEnum,
+    ) -> Optional[tuple['Object', Coordinate]]:
         """Проверяет коллизию по маске с группой объектов с определённой стороны.
 
         Args:
-            obj (BaseObject): объект для проверки коллизии.
+            obj (Object): объект для проверки коллизии.
             side (DirectionGroupEnum): сторона для проверки.
 
         Returns:
-            Optional[BaseObject]: объект, с которым произошла коллизия.
+            Optional[tuple[Object, Coordinate]]: координаты коллизии и объект, с которым произошла коллизия.
         """
         for sprite in self.sprites():
-            if obj.collide_side_mask(sprite, side):
-                return sprite
+            if coordinate := obj.collide_side_mask(sprite, side):
+                return sprite, coordinate
 
-    def collide_mask(self, obj: 'BaseObject') -> Optional['BaseObject']:
+    def collide_mask(self, obj: 'Object') -> Optional[tuple['Object', Coordinate]]:
         """Проверяет коллизию по маске с группой объектов.
 
         Args:
-            obj (BaseObject): объект для проверки коллизии.
+            obj (Object): объект для проверки коллизии.
 
         Returns:
-            Optional[BaseObject]: объект, с которым произошла коллизия.
+            Optional[tuple[Object, Coordinate]]: координаты коллизии и объект, с которым произошла коллизия.
         """
         for sprite in self.sprites():
-            if obj.rect.colliderect(sprite.rect) and collide_mask(obj, sprite):
-                return sprite
+            if not obj.rect.colliderect(sprite.rect):
+                continue
+            if coordinate := collide_mask(obj, sprite):
+                return sprite, Coordinate(*coordinate)
 
     def events(self, *args, **kwargs) -> None:
         """Запускает у объектов проверку событий."""
         pressed = Pressed()
         for sprite in self.sprites():
             sprite.events(pressed=pressed, *args, **kwargs)
-
-    def scale(self, *args, **kwargs) -> None:
-        """Изменяет размер объектов под текущий размер экрана."""
-        for sprite in self.sprites():
-            sprite.scale(*args, **kwargs)
 
     def _debug_mode(self, surface: Surface) -> None:
         """Debug mode
@@ -85,19 +90,35 @@ class BaseGroup(Group, metaclass=SingletonMeta):
         for sprite in self.sprites():
             draw.rect(
                 surface,
-                Color(*self._settings['engine']['rect_outline_color']),
+                Color(*self._settings['engine']['rect_outline']['rect_outline_color']),
                 sprite.rect,
-                width=self._settings['engine']['rect_outline_width'],
+                width=self._settings['engine']['rect_outline']['rect_outline_width'],
             )
 
-    def draw(self, surface: Surface, *arg, **kwarg) -> list['BaseObject']:
+    def draw(self, surface: Surface, *arg, **kwarg) -> list['Object']:
         """Добавляет обводку спрайтам при отладке."""
         self._debug_mode(surface)
         return super().draw(surface, *arg, **kwarg)
 
+    def move(self, dx: float = 0, dy: float = 0) -> None:
+        """Перемещение спрайтов..
+
+        Args:
+            dx (float, optional): перемещение по x. По дефолту 0.
+            dy (float, optional): перемещение по y. По дефолту 0.
+        """
+        for sprite in self.sprites():
+            rect = sprite.rect
+            rect.x += dx
+            rect.y += dy
+
 
 class AllObjectsGroup(BaseGroup):
     """Группа всех объектов."""
+
+
+class TextObjectsGroup(BaseGroup):
+    """Группа текстов."""
 
 
 class SolidObjectsGroup(BaseGroup):

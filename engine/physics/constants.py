@@ -1,5 +1,4 @@
 from engine.constants.direction import DirectionGroupEnum
-from engine.settings import Settings
 
 
 SING_X_Y = {
@@ -12,5 +11,3 @@ SING_X_Y = {
     DirectionGroupEnum.DOWN_LEFT: (-1, 1),
     DirectionGroupEnum.DOWN_RIGHT: (1, 1),
 }
-
-COEF_DROP_CHECK = Settings()['engine']['coef_drop_check']

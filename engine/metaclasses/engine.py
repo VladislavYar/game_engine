@@ -1,10 +1,7 @@
-from pygame import init
-
-
 class EngineMeta(type):
     """Метакласс Engine или его наследников."""
 
-    def __new__(cls: 'EngineMeta', *arg, **kwarg) -> type:
+    def __new__(cls: 'EngineMeta', *args, **kwargs) -> type:
         """Вызывает метод класса установки настроек и инициализирует pygame.
 
         Args:
@@ -13,7 +10,6 @@ class EngineMeta(type):
         Returns:
             type: класс Engine или его наследник.
         """
-        cls = super().__new__(cls, *arg, **kwarg)
-        init()
+        cls = super().__new__(cls, *args, **kwargs)
         cls._set_settings()
         return cls
