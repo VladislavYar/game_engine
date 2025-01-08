@@ -1,5 +1,4 @@
 from engine.actions import DynamicAction
-from engine.objects import DynamicObject
 from engine.constants.direction import DirectionGroupEnum
 from engine.physics.constants import SING_X_Y
 from engine.objects.constants import NameSpeedEnum
@@ -27,28 +26,24 @@ class MovementAction(DynamicAction):
         super()._set_default_values()
         self._current_boost = 0
 
-    def perform(self, obj: DynamicObject) -> None:
-        """Логика выполнения действия движения.
-
-        Args:
-            obj (Object): игровой объект над которым совершается действие.
-        """
+    def perform(self) -> None:
+        """Логика выполнения действия движения."""
         if self.direction_movement not in (DirectionGroupEnum.UP, DirectionGroupEnum.DOWN):
-            obj.direction = self.direction_movement
+            self._obj.direction = self.direction_movement
         count_actions_performed = self._get_count_actions_performed()
         sign_x, sign_y = SING_X_Y[self.direction_movement]
         boost = 0
         if self.name_field_boost:
-            boost = getattr(obj.speed, self.name_field_boost)
+            boost = getattr(self._obj.speed, self.name_field_boost)
         for _ in range(count_actions_performed):
             self._current_boost += boost
-            move_x = (getattr(obj.speed, self.name_field_speed) + self._current_boost) * sign_x
-            move_y = (getattr(obj.speed, self.name_field_speed) + self._current_boost) * sign_y
-            obj.rect.x += move_x
-            obj.rect.y += move_y
-            if self._solid_objects_group.collide_mask(obj):
-                obj.rect.x -= move_x
-                obj.rect.y -= move_y
+            move_x = (getattr(self._obj.speed, self.name_field_speed) + self._current_boost) * sign_x
+            move_y = (getattr(self._obj.speed, self.name_field_speed) + self._current_boost) * sign_y
+            self._obj.rect.x += move_x
+            self._obj.rect.y += move_y
+            if self._solid_objects_group.collide_mask(self._obj):
+                self._obj.rect.x -= move_x
+                self._obj.rect.y -= move_y
                 break
 
 

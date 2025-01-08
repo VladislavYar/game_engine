@@ -29,6 +29,7 @@ class Engine(QuitMixin, SetSettingsMixin, metaclass=EngineMeta):
         _settings (Settings): объект настроек игрового процесса.
         _all_objects_group (AllObjectsGroup): группа всех игровых объектов.
         _tile_grid (TileGrid): сетка тайтлов.
+        _debug (bool): флаг debug-a.
         _display_fps (Surface): отображение fps.
     """
 
@@ -42,12 +43,13 @@ class Engine(QuitMixin, SetSettingsMixin, metaclass=EngineMeta):
     _settings: Settings = Settings()
     _all_objects_group: AllObjectsGroup = AllObjectsGroup()
     _tile_grid: TileGrid = TileGrid()
+    _debug: bool = _settings['engine']['debug']['debug_mode']
     _display_fps = Text()
-    _display_fps.rect.center = Coordinate(*_settings['engine']['display_fps_coordinate'])
+    _display_fps.rect.center = Coordinate(*_settings['engine']['debug']['display_fps_coordinate'])
 
     def _debug_mode(self) -> None:
         """Веbug mode."""
-        if not self._settings['engine']['debug_mode']:
+        if not self._debug:
             return
         self._display_fps.text = f'{int(self._global_clock.get_fps())}'
         self.visible_map.blit(self._display_fps.text, self._display_fps.rect)

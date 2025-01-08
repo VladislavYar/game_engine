@@ -50,11 +50,6 @@ class Status:
     _obj: 'Object'
     inactive: bool = False
     focus: bool = False
-    jump: bool = False
-    double_jump: bool = False
-    fall: bool = False
-    hit: bool = False
-    death: bool = False
 
     @property
     def collision_mos(self) -> bool:
@@ -66,3 +61,22 @@ class Status:
         pos = mouse.get_pos()
         pos_in_mask = pos[0] - self._obj.rect.x, pos[1] - self._obj.rect.y
         return bool(self._obj.rect.collidepoint(*pos) and self._obj.mask.get_at(pos_in_mask))
+
+
+@dataclass
+class DynamicStatus(Status):
+    """Cтатусы динамического объекта объекта.
+
+    Attributes:
+        jump (bool): статус прыжка.
+        double_jump (bool): статус двойного прыжка.
+        fall (bool): статус падения.
+        hit (bool): статус урона.
+        death (bool): статус смерти.
+    """
+
+    jump: bool = False
+    double_jump: bool = False
+    fall: bool = False
+    hit: bool = False
+    death: bool = False

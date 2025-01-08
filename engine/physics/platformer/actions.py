@@ -1,11 +1,10 @@
 from engine.constants.direction import DirectionGroupEnum
 
 from engine.actions import DynamicAction
-from engine.objects import DynamicObject
-from engine.physics.constants import SING_X_Y
 from engine.objects.constants import NameSpeedEnum
 from engine.objects.groups import SolidObjectsGroup
 from engine.physics.actions import MovementAction, WalkAction, RunAction
+from engine.physics.constants import SING_X_Y
 
 
 class CheckObjectAction(DynamicAction):
@@ -17,38 +16,27 @@ class CheckObjectAction(DynamicAction):
 
     _solid_objects_group: SolidObjectsGroup = SolidObjectsGroup()
 
-    def _check_status_fall(self, obj: DynamicObject) -> None:
-        """Проверка статуса падения.
-
-        Args:
-            obj (Object): игровой объект над которым совершается действие.
-        """
+    def _check_status_fall(self) -> None:
+        """Проверка статуса падения."""
         if self._get_count_actions_performed():
-            obj.status.fall = True
-        moving_y = obj.speed.fall
-        obj.rect.y += moving_y
-        if self._solid_objects_group.collide_side_rect_with_mask(obj, DirectionGroupEnum.DOWN):
+            self._obj.status.fall = True
+        moving_y = self._obj.speed.fall
+        self._obj.rect.y += moving_y
+        if self._solid_objects_group.collide_rect_with_mask(self._obj):
             self._elapsed = 0
-            obj.status.fall = False
-        obj.rect.y -= moving_y
+            self._obj.status.fall = False
+        self._obj.rect.y -= moving_y
 
-    def _check_jamming(self, obj: DynamicObject) -> None:
-        """Проверка на застревание.
+    def _check_jamming(self) -> None:
+        """Проверка на застревание."""
 
-        Args:
-            obj (Object): игровой объект над которым совершается действие.
-        """
-        for direction in (DirectionGroupEnum.DOWN, DirectionGroupEnum.LEFT, DirectionGroupEnum.RIGHT):
-            self._push_out_object(obj, self._solid_objects_group, direction, SING_X_Y[direction])
+        for direction in (DirectionGroupEnum.DOWN,):
+            self._push_out_object(self._obj, self._solid_objects_group, direction, SING_X_Y[direction])
 
-    def perform(self, obj: DynamicObject) -> None:
-        """Логика проверки статусов игрового объекта.
-
-        Args:
-            obj (Object): игровой объект над которым совершается действие.
-        """
-        self._check_status_fall(obj)
-        self._check_jamming(obj)
+    def perform(self) -> None:
+        """Логика проверки статусов игрового объекта."""
+        self._check_status_fall()
+        self._check_jamming()
 
 
 class FallAction(MovementAction):

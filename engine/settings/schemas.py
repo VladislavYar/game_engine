@@ -24,6 +24,7 @@ from engine.settings.constants import (
     ColumnsRowsEnum,
     RectInnerOutlineRGBColorEnum,
     RectOutlineRGBColorEnum,
+    CameraSmoothnessEnum,
 )
 from engine.utils.file import validate_format_file
 from engine.settings.types import TYPES_SETTINGS
@@ -280,6 +281,31 @@ class TileGridSchema(RectOutlineSchema):
     )
 
 
+class DebugSchema(RectOutlineSchema):
+    """Схема debug."""
+
+    debug_mode: bool = Field(default=False, description='Флаг debug mode')
+    display_fps_coordinate: CoordinateSchema = Field(
+        default=CoordinateSchema(x=DisplayFPSCoordinateEnum.X, y=DisplayFPSCoordinateEnum.Y),
+        description='Координаты вывода fps',
+    )
+
+
+class CameraSchema(RectOutlineSchema):
+    """Схема камеры."""
+
+    camera_smoothness: float = Field(
+        default=CameraSmoothnessEnum.DEFAULT_SMOOTHNESS.value,
+        ge=CameraSmoothnessEnum.MIN_SMOOTHNESS.value,
+        le=CameraSmoothnessEnum.MAX_SMOOTHNESS.value,
+        description='Плавность камеры',
+    )
+    dead_zone: SizeSchema = Field(
+        default=SizeSchema(width=SizeEnum.DEFAULT_SIZE, height=SizeEnum.DEFAULT_SIZE),
+        description='Мёртвая зона камеры',
+    )
+
+
 class EngineSettingsSchema(BaseSettingsSchema):
     """Схема настроек движка."""
 
@@ -291,6 +317,13 @@ class EngineSettingsSchema(BaseSettingsSchema):
         default=ScreenResolutionSchema(width=BASE_VISIBLE_MAP_SIZE.width, height=BASE_VISIBLE_MAP_SIZE.height),
         description='Базовый размер видимой игровой карты',
     )
+    camera: CameraSchema = Field(
+        default=CameraSchema(
+            camera_smoothness=CameraSmoothnessEnum.DEFAULT_SMOOTHNESS.value,
+            dead_zone=SizeSchema(width=SizeEnum.DEFAULT_SIZE, height=SizeEnum.DEFAULT_SIZE),
+        ),
+        description='Камера',
+    )
     time_between: TimeBetweenSchema = Field(
         default=TimeBetweenSchema(
             time_between_animation_frames=TimeBetweenAnimationFramesEnum.DEFAULT_TIME,
@@ -298,7 +331,13 @@ class EngineSettingsSchema(BaseSettingsSchema):
         ),
         description='Время между кадрами',
     )
-    debug_mode: bool = Field(default=False, description='Флаг debug mode')
+    debug: DebugSchema = Field(
+        default=DebugSchema(
+            debug_mode=False,
+            display_fps_coordinate=CoordinateSchema(x=DisplayFPSCoordinateEnum.X, y=DisplayFPSCoordinateEnum.Y),
+        ),
+        description='Debug',
+    )
     rect_outline: RectOutlineSchema = Field(
         default=RectOutlineSchema(
             rect_outline_color=RGBColorSchema(
@@ -328,15 +367,11 @@ class EngineSettingsSchema(BaseSettingsSchema):
         ),
         description='Текст',
     )
-    image_scale: float = Field(
+    scale_image: float = Field(
         default=ImageScaleEnum.DEFAULT_SCALE.value,
         ge=ImageScaleEnum.MIN_SCALE.value,
         le=ImageScaleEnum.MAX_SCALE.value,
         description='Scale изображений',
-    )
-    display_fps_coordinate: CoordinateSchema = Field(
-        default=CoordinateSchema(x=DisplayFPSCoordinateEnum.X, y=DisplayFPSCoordinateEnum.Y),
-        description='Координаты вывода fps',
     )
     tile_grid: TileGridSchema = Field(
         default=TileGridSchema(

@@ -107,6 +107,14 @@ class VolumeEnum(Enum):
     MAX_VOLUME = 1
 
 
+class CameraSmoothnessEnum(Enum):
+    """Enum инерции камеры."""
+
+    DEFAULT_SMOOTHNESS = 0.01
+    MIN_SMOOTHNESS = 0
+    MAX_SMOOTHNESS = 1
+
+
 class FPSEnum(IntEnum):
     """Enum максимального и минимального ограничения FPS."""
 
@@ -140,7 +148,7 @@ class DisplayFPSCoordinateEnum(IntEnum):
 class SizeEnum(IntEnum):
     """Enum размеров."""
 
-    DEFAULT_SIZE = 32
+    DEFAULT_SIZE = 128
     MIN_SIZE = 0
 
 

@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING, Optional
 
-from pygame.sprite import Group, collide_mask
+from pygame.sprite import Group
 from pygame import Surface, draw
 
 from engine.events import Pressed
@@ -18,60 +18,47 @@ class BaseGroup(Group, metaclass=SingletonMeta):
 
     Attributes:
         _settings (Settings): объект настроек игрового процесса.
+        _debug (bool): флаг debug-a.
     """
 
     _settings: Settings = Settings()
+    _debug: bool = _settings['engine']['debug']['debug_mode']
 
-    def collide_side_rect_with_mask(
+    def collide_rect_with_mask(
         self,
         obj: 'Object',
-        side: DirectionGroupEnum,
+        side: DirectionGroupEnum | None = None,
     ) -> Optional[tuple['Object', Coordinate]]:
-        """Проверяет коллизию rect объекта с масками группы объектов с определённой стороны.
+        """Проверяет коллизию rect объекта с масками группы объектов.
 
         Args:
             obj (Object): объект для проверки коллизии.
-            side (DirectionGroupEnum): сторона для проверки.
+            side (DirectionGroupEnum | None, optional): сторона для проверки. По дефолту None.
 
         Returns:
             Optional[tuple[Object, Coordinate]]: координаты коллизии и объект, с которым произошла коллизия.
         """
         for sprite in self.sprites():
-            if coordinate := obj.collide_side_rect_with_mask(sprite, side):
+            if coordinate := obj.collide_rect_with_mask(sprite, side):
                 return sprite, coordinate
 
-    def collide_side_mask(
+    def collide_mask(
         self,
         obj: 'Object',
-        side: DirectionGroupEnum,
+        side: DirectionGroupEnum | None = None,
     ) -> Optional[tuple['Object', Coordinate]]:
-        """Проверяет коллизию по маске с группой объектов с определённой стороны.
-
-        Args:
-            obj (Object): объект для проверки коллизии.
-            side (DirectionGroupEnum): сторона для проверки.
-
-        Returns:
-            Optional[tuple[Object, Coordinate]]: координаты коллизии и объект, с которым произошла коллизия.
-        """
-        for sprite in self.sprites():
-            if coordinate := obj.collide_side_mask(sprite, side):
-                return sprite, coordinate
-
-    def collide_mask(self, obj: 'Object') -> Optional[tuple['Object', Coordinate]]:
         """Проверяет коллизию по маске с группой объектов.
 
         Args:
             obj (Object): объект для проверки коллизии.
+            side (DirectionGroupEnum | None, optional): сторона для проверки. По дефолту None.
 
         Returns:
             Optional[tuple[Object, Coordinate]]: координаты коллизии и объект, с которым произошла коллизия.
         """
         for sprite in self.sprites():
-            if not obj.rect.colliderect(sprite.rect):
-                continue
-            if coordinate := collide_mask(obj, sprite):
-                return sprite, Coordinate(*coordinate)
+            if coordinate := obj.collide_mask(sprite, side):
+                return sprite, coordinate
 
     def events(self, *args, **kwargs) -> None:
         """Запускает у объектов проверку событий."""
@@ -85,7 +72,7 @@ class BaseGroup(Group, metaclass=SingletonMeta):
         Args:
             surface (Surface): отображение.
         """
-        if not self._settings['engine']['debug_mode']:
+        if not self._debug:
             return
         for sprite in self.sprites():
             draw.rect(
@@ -95,22 +82,30 @@ class BaseGroup(Group, metaclass=SingletonMeta):
                 width=self._settings['engine']['rect_outline']['rect_outline_width'],
             )
 
-    def draw(self, surface: Surface, *arg, **kwarg) -> list['Object']:
-        """Добавляет обводку спрайтам при отладке."""
+    def draw(self, surface: Surface, *args, **kwargs) -> None:
+        """Добавляет обводку спрайтам при отладке и меняет логину отрисовки."""
         self._debug_mode(surface)
-        return super().draw(surface, *arg, **kwarg)
+        sprites = self.sprites()
+        self.spritedict.update(
+            zip(
+                sprites,
+                surface.blits(
+                    (spr.image, (spr.rect.x - spr.coordinate_shift.x, spr.rect.y - spr.coordinate_shift.y))
+                    for spr in sprites
+                ),
+            )
+        )
 
-    def move(self, dx: float = 0, dy: float = 0) -> None:
+    def move(self, move: Coordinate) -> None:
         """Перемещение спрайтов..
 
         Args:
-            dx (float, optional): перемещение по x. По дефолту 0.
-            dy (float, optional): перемещение по y. По дефолту 0.
+            move (Coordinate): перемещение по осям x, y.
         """
         for sprite in self.sprites():
             rect = sprite.rect
-            rect.x += dx
-            rect.y += dy
+            rect.x += move.x
+            rect.y += move.y
 
 
 class AllObjectsGroup(BaseGroup):

@@ -1,9 +1,9 @@
 import os
 from pathlib import Path
 from dataclasses import dataclass
-from typing import Iterator, TYPE_CHECKING
+from typing import Iterator
 
-from pygame import image, transform, Surface
+from pygame import image, Surface
 
 from engine.utils.file import validate_format_file
 from engine.constants.path import BasePathEnum
@@ -14,12 +14,8 @@ from engine.constants.empty import EMPTY_FRAME
 from engine.animations.frames import Frame
 from engine.utils.events import check_events
 from engine.mixins.management import ManagementMixin
-from engine.constants import WRITING_ONLY
 from engine.settings import Settings
-from engine.constants import Size
-
-if TYPE_CHECKING:
-    from engine.objects import Object
+from engine.animations.constants import Flip, ScaleRect, ScaleImage
 
 
 class Animation(ManagementMixin):
@@ -45,10 +41,9 @@ class Animation(ManagementMixin):
         is_loop: bool = False,
         sound: str | None = None,
         time_between: int | None = None,
-        flip_x: bool = False,
-        flip_y: bool = False,
-        flip_by_derection: bool = False,
-        scale: float = _settings['engine']['image_scale'],
+        flip: Flip = Flip(),
+        scale_rect: ScaleRect = ScaleRect(),
+        scale_image: ScaleImage = ScaleImage(_settings['engine']['scale_image'], _settings['engine']['scale_image']),
     ) -> None:
         """Инициализация анимации.
 
@@ -57,16 +52,19 @@ class Animation(ManagementMixin):
             is_loop (bool, optional): зацикленная анимация. По дефолту False.
             sound (str | None, optional): название файла аудио анимации. По дефолту None.
             time_between (int | None, optional): Время между кадрами фрейма. По дефолту None.
-            flip_x (bool, optional): Флаг отражения по горизонтале. По дефолту False.
-            flip_y (bool, optional): Флаг отражения по вертикале. По дефолту False.
-            flip_by_derection (bool, optional): Флаг поворота анимации по направлению движения. По дефолту False.
-            scale (float, optional): Scale анимации. По дефолту 1.
+            flip (Flip, optional):
+                Флаги отражения по вертикале, горизонтале и по направлению движения. Flip().
+            scale_rect (ScaleRect, optional):
+                scale rect. По дефолту ScaleRect().
+            scale_image (ScaleImage, optional): scale image.
+                По дефолту ScaleImage(_settings['engine']['scale_image'], _settings['engine']['scale_image']).
         """
         path = BasePathEnum.ANIMATIONS_PATH.value / dir
         path_images = self._get_full_path_images(path)
-        self._frames = self._get_frames(path_images, flip_x, flip_y, scale)
+        self._frames = tuple(
+            Frame(self._get_image(path_image), flip, scale_rect, scale_image) for path_image in path_images
+        )
         self.is_loop = is_loop
-        self._flip_by_derection = flip_by_derection
         self.time_between = time_between if time_between else self.time_between
         self._sound = self._audio.load_effect(sound) if sound else None
         self._count_frames = len(self._frames)
@@ -104,48 +102,9 @@ class Animation(ManagementMixin):
         self._images[path_image] = img
         return img
 
-    def _get_frames(self, path_images: list[str], flip_x: bool, flip_y: bool, scale: float) -> tuple[Frame]:
-        """Отдаёт список кадров.
-
-        Args:
-            path_images (list[str]): пути до изображений.
-            flip_x (bool): Флаг отражения по горизонтале.
-            flip_y (bool): Флаг отражения по вертикале.
-
-        Raises:
-            ValueError: ошибка валидации при отсутвии кадров.
-
-        Returns:
-            tuple[Frame]: список кадров.
-        """
-        frames = []
-        for path_image in path_images:
-            img = transform.flip(self._get_image(path_image), flip_x, flip_y)
-            rect = img.get_frect()
-            img = transform.scale(img, Size(rect.width * scale, rect.height * scale))
-            frames.append(Frame(img))
-        return tuple(frames)
-
-    def _get_rotation_frame(self, index: int) -> Frame:
-        """Отдаёт frame анимации с проверкой на поворот.
-
-        Args:
-            images (int): индекс frame.
-
-        Returns:
-            Frame: frame анимации.
-        """
-        frame = self._frames[index]
-        if self._flip_by_derection:
-            frame.direction = self._obj.direction
-        return frame
-
     @property
     def frame(self) -> Frame:
         """Отдаёт следующий кадр анимации в зависимости от времени между кадрами.
-
-        Args:
-            obj (Object): игровой объект.
 
         Returns:
             Frame: кадр анимации.
@@ -154,7 +113,7 @@ class Animation(ManagementMixin):
             return self._empty_frame
 
         if self._count_frames == 1:
-            return self._get_rotation_frame(0)
+            return self._frames[0]
 
         frame_shift, self._elapsed = self._update_elapsed()
         self._active_frame += frame_shift
@@ -163,24 +122,17 @@ class Animation(ManagementMixin):
             if not self.is_loop:
                 self.stop()
                 return self._empty_frame
-        return self._get_rotation_frame(self._active_frame)
-
-    @property
-    def obj(self) -> None:
-        raise WRITING_ONLY
-
-    @obj.setter
-    def obj(self, obj: 'Object') -> None:
-        """Добавляет игровой объект анимации.
-        Args:
-            obj (Object): игровой объект.
-        """
-        self._obj = obj
+        return self._frames[self._active_frame]
 
 
 @dataclass
 class EventsAnimation:
-    """Dataclass представляющий связь events и анимации."""
+    """Dataclass представляющий связь events и анимации.
+
+    Attributes:
+        events (Events) events.
+        animation (Animation): анимация.
+    """
 
     events: Events
     animation: Animation
@@ -213,9 +165,9 @@ class EventsAnimation:
 class EventsAnimationGroup:
     """Класс группы EventsAnimation."""
 
-    def __init__(self, *arg: EventsAnimation) -> None:
+    def __init__(self, *args: EventsAnimation) -> None:
         """Инициализирует группу EventsAnimation."""
-        self._events_animations = {events_animation: events_animation for events_animation in arg}
+        self._events_animations = {events_animation: events_animation for events_animation in args}
         if not self._events_animations[DEFAULT_EVENT]:
             raise ValueError('Дефолтная анимация является обязательной.')
 
@@ -242,11 +194,7 @@ class EventsAnimationGroup:
 class AnimationGroup:
     """Класс представляющий группу анимаций."""
 
-    def __init__(
-        self,
-        events_animations: EventsAnimationGroup,
-        obj: 'Object',
-    ) -> None:
+    def __init__(self, events_animations: EventsAnimationGroup) -> None:
         """Инициализация группы анимаций.
 
         Args:
@@ -256,8 +204,6 @@ class AnimationGroup:
         self._events_animations = events_animations
         self._default_animation = self._events_animations[DEFAULT_EVENT]
         self._current_animation = self._old_current_animation = self._default_animation
-        for events_animation in self._events_animations:
-            events_animation.animation.obj = obj
 
     def _check_old_current_animation(self, pressed: Pressed) -> None:
         """Проверка актуальности старой анимации.

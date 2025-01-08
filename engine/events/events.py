@@ -4,9 +4,9 @@ from typing import Iterator
 class Events:
     """Класс предоставляющий набора событий."""
 
-    def __init__(self, *arg: int) -> None:
+    def __init__(self, *args: int) -> None:
         """Создаёт набор событий."""
-        self._events = frozenset(arg)
+        self._events = frozenset(args)
 
     def __eq__(self, other: 'Events') -> bool:
         """Проверка на равество объектов.

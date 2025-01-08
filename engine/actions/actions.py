@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Iterator
+from typing import TYPE_CHECKING, Iterator, Optional, Self
 from dataclasses import dataclass
 
 from engine.events import Events, Pressed
@@ -31,6 +31,7 @@ class Action(ManagementMixin):
         is_loop: bool = False,
         sound: str | None = None,
         time_between: int | None = None,
+        obj: Optional['Object'] = None,
     ) -> None:
         """Инициализация действия.
 
@@ -38,11 +39,22 @@ class Action(ManagementMixin):
             is_loop (bool, optional): зацикленная анимация. По дефолту False.
             sound (str | None): название файла аудио действия. По дефолту None.
             time_between (int | None, optional): Время между действиями. По дефолту None.
+            obj (Optional['Object'], optional): игровой объект. По дефолту None.
         """
         self.time_between = time_between if time_between else self.time_between
-        self._sound = self._audio.load_effect(sound) if sound else None
+        self._sound = sound
+        self._obj = obj
         self.is_loop = is_loop
+
+    def after_init(self) -> Self:
+        """Инициализация action после основной инициализации.
+
+        Returns:
+            Self: возвращает ссылку на себя же.
+        """
+        self._sound = self._audio.load_effect(self._sound) if self._sound else None
         self._set_default_values()
+        return self
 
     def _get_count_actions_performed(self) -> int:
         """Необходимое количество совершения действия."""
@@ -54,12 +66,16 @@ class Action(ManagementMixin):
             return 1
         return count_actions_performed
 
-    def perform(self, obj: 'Object') -> None:
-        """Совершает действие.
+    def perform(self) -> None:
+        """Совершает действие."""
 
-        Args:
-            obj (Object): игровой объект над которым совершается действие.
+    def __deepcopy__(self, memo: dict) -> 'Action':
+        """Копирует action.
+
+        Returns:
+            'Action': копия action.
         """
+        return self.__class__(self.is_loop, self._sound, self.time_between, memo.get('obj', self._obj)).after_init()
 
 
 class DynamicAction(Action):
@@ -80,12 +96,12 @@ class DynamicAction(Action):
             direction (DirectionGroupEnum): направление проверки коллизии.
             sing_x_y (tuple[int, int]): направление выталкивания.
         """
-        if sprite_coordinate := group.collide_side_mask(obj, direction):
+        if sprite_coordinate := group.collide_mask(obj, direction):
             sign_x, sign_y = sing_x_y
             while True:
                 obj.rect.y -= sign_y
                 obj.rect.x -= sign_x
-                if not obj.collide_side_rect_with_mask(sprite_coordinate[0], direction):
+                if not obj.collide_mask(sprite_coordinate[0], direction):
                     obj.rect.y += sign_y
                     obj.rect.x += sign_x
                     break
@@ -126,9 +142,9 @@ class EventsAction:
 class EventsActionGroup:
     """Класс группы EventsAction."""
 
-    def __init__(self, *arg: EventsAction | tuple[EventsAction]) -> None:
+    def __init__(self, *args: EventsAction | tuple[EventsAction]) -> None:
         """Инициализирует группу EventsAction."""
-        self._events_actions = {events_action: events_action for events_action in arg}
+        self._events_actions = {events_action: events_action for events_action in args}
 
     def __getitem__(self, key: Events) -> EventsAction | None:
         """Отдаёт связь events и действия по ключу.
@@ -153,13 +169,8 @@ class EventsActionGroup:
 class ActiveActions:
     """Класс активных действий."""
 
-    def __init__(self, obj: 'Object') -> None:
-        """Инициализация объекта активных действий.
-
-        Args:
-            obj (Object): игровой объект.
-        """
-        self._obj = obj
+    def __init__(self) -> None:
+        """Инициализация объекта активных действий."""
         self._active_actions: dict[Events, Action] = {}
 
     def __setitem__(self, key: Events, value: Action) -> None:
@@ -172,7 +183,7 @@ class ActiveActions:
         if not self._active_actions.get(key):
             self._active_actions[key] = value
             value.start()
-        value.perform(self._obj)
+        value.perform()
 
     def __delitem__(self, key: Events) -> None:
         """Удаляет активное действие.
@@ -191,16 +202,14 @@ class ActionGroup:
     def __init__(
         self,
         events_actions: EventsActionGroup,
-        obj: 'Object',
     ) -> None:
         """Инициализация группы действий.
 
         Args:
             events_actions (EventsActionGroup): группа объектов EventsAction.
-            obj (Object): игровой объект.
         """
         self._events_actions = events_actions
-        self._active_actions = ActiveActions(obj)
+        self._active_actions = ActiveActions()
 
     def _check_group_events(self, events_actions: tuple[EventsAction, ...], pressed: Pressed) -> None:
         """Проверка группу событий.

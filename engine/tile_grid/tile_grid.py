@@ -111,7 +111,7 @@ class TileGrid(metaclass=SingletonMeta):
 
     def _debug_mode(self) -> None:
         """Debug mode."""
-        if not self._settings['engine']['debug_mode']:
+        if not self._settings['engine']['debug']['debug_mode']:
             return
         self._create_surface()
         self._draw_tile()

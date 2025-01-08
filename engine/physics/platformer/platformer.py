@@ -1,7 +1,6 @@
 import pygame
 
 from engine.events import Events
-from engine.events.constants import FALL_EVENT, DEFAULT_EVENT
 from engine.actions import EventsAction, EventsActionGroup
 
 from engine.physics.platformer.actions import (
@@ -9,10 +8,8 @@ from engine.physics.platformer.actions import (
     WalkRightAction,
     RunLeftAction,
     RunRightAction,
-    FallAction,
     _RunUpAction,
     _RunDownAction,
-    CheckObjectAction,
 )
 
 
@@ -24,6 +21,8 @@ class PlatformerPhysics:
     """
 
     events_action_group = EventsActionGroup(
+        # EventsAction(FALL_EVENT, FallAction(is_loop=True)),
+        # EventsAction(DEFAULT_EVENT, CheckObjectAction(is_loop=True)),
         (
             EventsAction(Events(pygame.K_a, pygame.K_LSHIFT), RunLeftAction(is_loop=True)),
             EventsAction(Events(pygame.K_d, pygame.K_LSHIFT), RunRightAction(is_loop=True)),
@@ -32,6 +31,4 @@ class PlatformerPhysics:
             EventsAction(Events(pygame.K_w), _RunUpAction(is_loop=True)),
             EventsAction(Events(pygame.K_s), _RunDownAction(is_loop=True)),
         ),
-        EventsAction(FALL_EVENT, FallAction(is_loop=True)),
-        EventsAction(DEFAULT_EVENT, CheckObjectAction(is_loop=True)),
     )
