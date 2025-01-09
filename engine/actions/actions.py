@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Iterator, Optional, Self
 from dataclasses import dataclass
 
 from engine.events import Events, Pressed
-from engine.audio import Audio
+from engine.audio import Sound
 from engine.utils.events import check_events
 from engine.mixins.management import ManagementMixin
 from engine.settings import Settings
@@ -19,25 +19,23 @@ class Action(ManagementMixin):
 
     Attributes:
         _settings (Settings): объект настроек игрового процесса.
-        _audio (Audio): объект для работы с аудио.
         _global_clock (GlobalClock): объект глобальных часов игрового процесса.
     """
 
     _settings: Settings = Settings()
-    _audio: Audio = Audio()
     _global_clock: GlobalClock = GlobalClock()
 
     def __init__(
         self,
         is_loop: bool = False,
-        sound: str | None = None,
+        sound: Sound | None = None,
         obj: Optional['Object'] = None,
     ) -> None:
         """Инициализация действия.
 
         Args:
             is_loop (bool, optional): зацикленная анимация. По дефолту False.
-            sound (str | None): название файла аудио действия. По дефолту None.
+            sound (Sound | None): аудио действия. По дефолту None.
             obj (Optional['Object'], optional): игровой объект. По дефолту None.
         """
         self._sound = sound
@@ -50,7 +48,6 @@ class Action(ManagementMixin):
         Returns:
             Self: возвращает ссылку на себя же.
         """
-        self._sound = self._audio.load_effect(self._sound) if self._sound else None
         self._set_default_values()
         return self
 
@@ -144,6 +141,24 @@ class EventsActionGroup:
             EventsAnimation | None: связь events и действия.
         """
         return self._events_actions.get(key)
+
+    def __add__(self, other: 'EventsActionGroup') -> 'EventsActionGroup':
+        """Сложение EventsActionGroup.
+
+        Args:
+            other (EventsActionGroup): правый операнд.
+
+        Raises:
+            ArithmeticError: ошибка не правильного типа.
+
+        Returns:
+           EventsActionGroup: правый =операнд.
+        """
+        if not isinstance(other, EventsActionGroup):
+            raise ArithmeticError('Правый операнд должен быть типом EventsActionGroup')
+        for events_action in self._events_actions.values():
+            other._events_actions[events_action] = events_action
+        return other
 
     def __iter__(self) -> Iterator[EventsAction | tuple[EventsAction]]:
         """Итератор по объектам EventsAction.

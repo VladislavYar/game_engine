@@ -26,17 +26,21 @@ class Object(BaseObject):
 
     _status_class: Status = Status
     _tile_grid: TileGrid = TileGrid()
+
     events_action_group: EventsActionGroup = EventsActionGroup()
     events_animation_group: EventsAnimationGroup
 
     def __init__(self) -> None:
-        """Инициализация объекта."""
         super().__init__()
         self._set_default_values()
-        self._animation_group = AnimationGroup(deepcopy(self.events_animation_group, memo={'obj': self}))
-        self._actions_group = ActionGroup(deepcopy(self.events_action_group, memo={'obj': self}))
+        self._init_animation_actions_group()
         self.events(Pressed())
         self.update()
+
+    def _init_animation_actions_group(self) -> None:
+        """Инициализация групп animation и actions."""
+        self._animation_group = AnimationGroup(deepcopy(self.events_animation_group, memo={'obj': self}))
+        self._actions_group = ActionGroup(deepcopy(self.events_action_group, memo={'obj': self}))
 
     def _set_default_values(self) -> None:
         """Устанавливает дефолтные значения для игрового объекта."""
@@ -53,6 +57,15 @@ class Object(BaseObject):
         """
         setattr(self.rect, position, Coordinate(*getattr(self._tile_grid[row][column].rect, position)))
 
+    def _animation_actions_events(self, pressed: Pressed) -> None:
+        """Проверка совершённых событий группах animation и actions.
+
+        Args:
+            pressed (Pressed): объект состояния кнопок, коллизии и активности объекта.
+        """
+        self._actions_group.events(pressed)
+        self._animation_group.events(pressed)
+
     def events(self, pressed: Pressed) -> None:
         """Проверка совершённых событий.
 
@@ -60,8 +73,7 @@ class Object(BaseObject):
             pressed (Pressed): объект состояния кнопок, коллизии и активности объекта.
         """
         pressed.status = self.status
-        self._animation_group.events(pressed)
-        self._actions_group.events(pressed)
+        self._animation_actions_events(pressed)
 
     def _new_frame(self) -> None:
         """Устанавливает новый фрейм."""
@@ -143,9 +155,18 @@ class DynamicObject(Object):
 
     Attributes:
         speed (Speed): скорость динамического объекта.
-        direction (DirectionEnum, optional): направление объекта. По дефолту DirectionEnum.RIGHT.
+        physics_events_action_group (EventsAnimationGroup): группа событий и действий физики.
     """
 
     _status_class = DynamicStatus
-    groups: tuple[DynamicObjectsGroup] = (DynamicObjectsGroup(),)
     speed: Speed
+    physics_events_action_group: EventsActionGroup = EventsActionGroup()
+    groups: tuple[DynamicObjectsGroup] = (DynamicObjectsGroup(),)
+
+    def _init_animation_actions_group(self) -> None:
+        super()._init_animation_actions_group()
+        self._physics_actions_group = ActionGroup(deepcopy(self.physics_events_action_group, memo={'obj': self}))
+
+    def _animation_actions_events(self, pressed: Pressed) -> None:
+        self._physics_actions_group.events(pressed)
+        super()._animation_actions_events(pressed)

@@ -3,6 +3,7 @@ from pygame import FRect, Surface, draw
 from engine.metaclasses.singleton import SingletonMeta
 from engine.settings import Settings
 from engine.constants import Size, Coordinate, Color, ZERO_COORDINATES
+from engine.constants.empty import EMPTY_FRAME
 from engine.tile_grid.constants import POSITION_RECT_INNER_OUTLINE, SHIFT_NUMBER_POSITION_BY_X
 from engine.objects.text import Text
 
@@ -33,18 +34,15 @@ class Tile:
 class TileGrid(metaclass=SingletonMeta):
     """Класс сетки тайлов."""
 
-    _settings = Settings()
-
     def __init__(self) -> None:
-        """Инициализация игровой сетки.
-
-        Attributes:
-            _settings (Settings): объект настроек игрового процесса.
-        """
+        """Инициализация игровой сетки."""
+        self._settings = Settings()
         self._tile_grid: tuple[tuple[Tile]] = tuple(
             tuple(Tile(row, column) for column in range(self._settings['engine']['tile_grid']['rows']))
             for row in range(self._settings['engine']['tile_grid']['columns'])
         )
+        self.rect = EMPTY_FRAME.rect
+        self._debug = self._settings['engine']['debug']['debug_mode']
         self._debug_mode()
 
     def __getitem__(self, index: int) -> tuple[Tile]:
@@ -111,7 +109,20 @@ class TileGrid(metaclass=SingletonMeta):
 
     def _debug_mode(self) -> None:
         """Debug mode."""
-        if not self._settings['engine']['debug']['debug_mode']:
+        if not self._debug:
             return
         self._create_surface()
         self._draw_tile()
+
+    def move(self, move: Coordinate) -> None:
+        """Перемещение сетки тайтлов.
+
+        Args:
+            move (Coordinate): перемещение по осям x, y.
+        """
+        self.rect.x += move.x
+        self.rect.y += move.y
+        for column in self._tile_grid:
+            for tile in column:
+                tile.rect.x += move.x
+                tile.rect.y += move.y

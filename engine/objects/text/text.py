@@ -7,6 +7,7 @@ from engine.constants.path import BasePathEnum
 from engine.settings import Settings
 from engine.objects.base_object import BaseObject
 from engine.objects.groups import TextObjectsGroup
+from engine.cache import Cache
 
 
 class Text(BaseObject):
@@ -14,10 +15,12 @@ class Text(BaseObject):
 
     Attributes:
         _settings (Settings): объект настроек игрового процесса.
+        _cache: (Cache): кэш.
     """
 
     ft.init()
     _settings: Settings = Settings()
+    _cache: Cache = Cache()
     group = (TextObjectsGroup,)
 
     def __init__(
@@ -36,11 +39,20 @@ class Text(BaseObject):
             font (str | font | None, optional): ширифт текста или путь до него в папке resources/fonts. По дефолту None.
         """
         super().__init__()
-        self._font = self._get_font(size, font)
+        self._obj_font = self._get_font(size, font)
         self._color = color if color else Color(*self._settings['engine']['text']['text_color'])
-        self._text = text
-        self.image = self._font.render(self._text, True, self._color)
+        self._text, self._size, self._font = text, size, font
+        self.image = self._render_text()
         self.rect = self.image.get_frect()
+
+    def _render_text(self) -> Surface:
+        """Рендерит текст.
+
+        Returns:
+            Surface: текст.
+        """
+        args_key = (self._size, self._font, self._text, True, self._color)
+        return self._cache.get(args_key, self._obj_font.render, self._text, True, self._color)
 
     def _get_font(self, size: int, font: str | Path | None = None) -> ft.Font:
         """Отдаёт ширифт.
@@ -63,7 +75,7 @@ class Text(BaseObject):
     def _update_text(self) -> None:
         """Обновляет текст."""
         rect_center = self.rect.center
-        self.image = self._font.render(self._text, True, self._color)
+        self.image = self._render_text()
         self.rect = self.image.get_rect()
         self.rect.center = rect_center
 

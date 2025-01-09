@@ -6,7 +6,7 @@ class ManagementMixin:
         self._active_frame = 0
         self._elapsed = 0
         self.is_active = False
-        if self._sound and self.is_loop:
+        if self._sound:
             self._sound.stop()
 
     def restart(self) -> None:
@@ -14,7 +14,7 @@ class ManagementMixin:
         self._set_default_values()
         self.is_active = True
         if self._sound:
-            self._sound.play(loops=-1 if self.is_loop else 0)
+            self._sound.play()
 
     def start(self) -> None:
         """Запускает, если не активна."""

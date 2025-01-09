@@ -3,6 +3,7 @@ from engine.constants.direction import DirectionGroupEnum
 from engine.actions import DynamicAction
 from engine.objects.constants import NameSpeedEnum, NameStatusEnum
 from engine.objects.groups import SolidObjectsGroup
+from engine.physics.constants import SING_X_Y
 from engine.physics.actions import MovementAction, WalkAction, RunAction
 
 
@@ -18,6 +19,7 @@ class CheckObjectAction(DynamicAction):
     def _check_status_fall(self) -> None:
         """Проверка статуса падения."""
         if self._obj.status.jump or self._obj.status.double_jump:
+            self._obj.status.fall = False
             return
         moving_y = self._obj.speed.fall
         self._obj.rect.y += moving_y
@@ -55,8 +57,26 @@ class JumpAction(MovementAction):
     direction_movement = DirectionGroupEnum.UP
     name_statuses_field = (NameStatusEnum.JUMP, NameStatusEnum.FALL)
 
+    def perform(self) -> None:
+        """Логика прыжка."""
+        _, sign_y = SING_X_Y[self.direction_movement]
+        boost = 0
+        if self.name_field_boost:
+            boost = getattr(self._obj.speed, self.name_field_boost)
+        self._current_boost += boost * self._global_clock.dt
+        speed = getattr(self._obj.speed, self.name_field_speed) + self._current_boost
+        move_y = speed * sign_y * self._global_clock.dt
+        self._obj.rect.y += move_y
+        if self._solid_objects_group.collide_rect_with_mask(self._obj):
+            if move_y <= 0:
+                self._current_boost = -getattr(self._obj.speed, self.name_field_speed)
+            else:
+                for status in self.name_statuses_field:
+                    setattr(self._obj.status, status, False)
+            self._obj.rect.y -= move_y
 
-class DoubleJumpAction(MovementAction):
+
+class DoubleJumpAction(JumpAction):
     """Двойной прыжок."""
 
     name_field_speed = NameSpeedEnum.DOUBLE_JUMP

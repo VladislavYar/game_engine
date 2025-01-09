@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING, Optional
 
 from pygame.sprite import Group
-from pygame import Surface, draw
+from pygame import Surface, draw, FRect
 
 from engine.events import Pressed
 from engine.metaclasses.singleton import SingletonMeta
@@ -97,13 +97,13 @@ class BaseGroup(Group, metaclass=SingletonMeta):
         )
 
     def move(self, move: Coordinate) -> None:
-        """Перемещение спрайтов..
+        """Перемещение спрайтов.
 
         Args:
             move (Coordinate): перемещение по осям x, y.
         """
         for sprite in self.sprites():
-            rect = sprite.rect
+            rect: FRect = sprite.rect
             rect.x += move.x
             rect.y += move.y
 

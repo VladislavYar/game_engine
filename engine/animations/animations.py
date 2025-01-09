@@ -3,11 +3,9 @@ from pathlib import Path
 from dataclasses import dataclass
 from typing import Iterator
 
-from pygame import image, Surface
-
 from engine.utils.file import validate_format_file
 from engine.constants.path import BasePathEnum
-from engine.audio import Audio
+from engine.audio import Sound
 from engine.events.constants import DEFAULT_EVENT
 from engine.events import Events, Pressed
 from engine.constants.empty import EMPTY_FRAME
@@ -24,25 +22,21 @@ class Animation(ManagementMixin):
 
     Attributes:
         _settings (Settings): объект настроек игрового процесса.
-        _audio (Audio): объект для работы с аудио.
         _global_clock (GlobalClock): объект глобальных часов игрового процесса.
         _empty_frame (Frame): пустое кадр.
-        _images (dict[str, Surface]): словарь отношения путь - загруженное изображение.
         time_between (int): время между кадрами.
     """
 
     _settings: Settings = Settings()
-    _audio: Audio = Audio()
     _global_clock: GlobalClock = GlobalClock()
     _empty_frame: Frame = EMPTY_FRAME
-    _images: dict[str, Surface] = {}
     time_between: int = _settings['engine']['time_between_animation_frames']
 
     def __init__(
         self,
         dir: str | Path,
         is_loop: bool = False,
-        sound: str | None = None,
+        sound: Sound | None = None,
         time_between: int | None = None,
         flip: Flip = Flip(),
         scale_rect: ScaleRect = ScaleRect(),
@@ -53,7 +47,7 @@ class Animation(ManagementMixin):
         Args:
             dir (str): директорию анимации.
             is_loop (bool, optional): зацикленная анимация. По дефолту False.
-            sound (str | None, optional): название файла аудио анимации. По дефолту None.
+            sound (Sound | None, optional): аудио анимации. По дефолту None.
             time_between (int | None, optional): Время между кадрами фрейма. По дефолту None.
             flip (Flip, optional):
                 Флаги отражения по вертикале, горизонтале и по направлению движения. Flip().
@@ -64,12 +58,10 @@ class Animation(ManagementMixin):
         """
         path = BasePathEnum.ANIMATIONS_PATH.value / dir
         path_images = self._get_full_path_images(path)
-        self._frames = tuple(
-            Frame(self._get_image(path_image), flip, scale_rect, scale_image) for path_image in path_images
-        )
+        self._frames = tuple(Frame(flip, scale_rect, scale_image, path_image) for path_image in path_images)
         self.is_loop = is_loop
         self.time_between = time_between if time_between else self.time_between
-        self._sound = self._audio.load_effect(sound) if sound else None
+        self._sound = sound
         self._count_frames = len(self._frames)
         self._set_default_values()
 
@@ -90,21 +82,6 @@ class Animation(ManagementMixin):
                 path_images.append(full_path)
         return path_images
 
-    def _get_image(self, path_image: str) -> Surface:
-        """Отдаёт изображение.
-
-        Args:
-            path_image (str): путь до изображения.
-
-        Returns:
-            Surface: изображение.
-        """
-        if img := self._images.get(path_image):
-            return img.copy()
-        img = image.load(path_image).convert_alpha()
-        self._images[path_image] = img
-        return img
-
     @property
     def frame(self) -> Frame:
         """Отдаёт следующий кадр анимации в зависимости от времени между кадрами.
@@ -124,7 +101,6 @@ class Animation(ManagementMixin):
             self._active_frame = self._count_frames // self._active_frame - 1
             if not self.is_loop:
                 self.stop()
-                return self._empty_frame
         return self._frames[self._active_frame]
 
 
@@ -216,6 +192,7 @@ class AnimationGroup:
         """
         events = self._old_current_animation.events
         if events != DEFAULT_EVENT and not check_events(events, pressed):
+            self._old_current_animation.animation.stop()
             self._old_current_animation = self._default_animation
 
     def _check_current_animation(self, pressed: Pressed) -> None:
@@ -239,7 +216,8 @@ class AnimationGroup:
         """
         animation = events_animation.animation
         old_animation = self._old_current_animation.animation
-        if old_animation.is_loop and old_animation != animation:
+        if old_animation.is_loop and self._current_animation.animation != animation:
+            self._current_animation.animation.stop()
             self._current_animation = events_animation
             animation.start()
 

@@ -1,46 +1,62 @@
 from typing import Callable, TYPE_CHECKING, Optional, Self
 
-from pygame import transform, Surface, mask, Mask
+from pygame import transform, Surface, mask, Mask, image
 
 from engine.constants import Size, Coordinate
 from engine.animations.constants import Flip, ScaleRect, ScaleImage
 from engine.constants.direction import DirectionGroupEnum
 from engine.settings import Settings
+from engine.cache import Cache
+from engine.animations.constants import EMPTY_SURFACE
 
 if TYPE_CHECKING:
     from engine.objects import Object
 
 
-class BaseFrame:
+class Frame:
     """Класс представляющий базовый кадр.
 
     Attributes:
         _settings (Settings): объект настроек игрового процесса.
+        _cache: (Cache): кэш.
         _map_flip_by_derection: (dict[DirectionGroupEnum | None, Callable]):
             словарь - направления и функция переворота изображения.
     """
 
     _settings: Settings = Settings()
+    _cache: Cache = Cache()
     _map_flip_by_derection: dict[DirectionGroupEnum | None, Callable] = {
-        None: lambda image: image,
-        DirectionGroupEnum.RIGHT: lambda image: image,
-        DirectionGroupEnum.UP: lambda image: image,
-        DirectionGroupEnum.LEFT: lambda image: transform.flip(image, True, False),
-        DirectionGroupEnum.DOWN: lambda image: transform.flip(image, False, True),
+        None: lambda self: self._image,
+        DirectionGroupEnum.RIGHT: lambda self: self._image,
+        DirectionGroupEnum.UP: lambda self: self._image,
+        DirectionGroupEnum.LEFT: lambda self: self._cache.get(
+            (self._path_image, self._flip.x, self._flip.y, *self._scale_image, True, False),
+            transform.flip,
+            self._image,
+            True,
+            False,
+        ),
+        DirectionGroupEnum.DOWN: lambda self: self._cache.get(
+            (self._path_image, self._flip.x, self._flip.y, *self._scale_image, False, True),
+            transform.flip,
+            self._image,
+            False,
+            True,
+        ),
     }
 
     def __init__(
         self,
-        image: Surface,
         flip: Flip,
         scale_rect: ScaleRect,
         scale_image: ScaleImage,
+        path_image: str | None = None,
         obj: Optional['Object'] = None,
     ) -> None:
-        """Инициализация базового кадра.
+        """Инициализация кадра.
 
         Args:
-            image (Surface): изображение кадра анимации.
+            path_image (str | None, optional): путь до изображения кадра анимации. По дефолту None.
             flip (Flip):
                 Флаги отражения по вертикале, горизонтале и по направлению движения.
             scale_rect (ScaleRect): scale rect.
@@ -48,10 +64,20 @@ class BaseFrame:
             obj (Optional['Object'], optional): игровой объект. По дефолту None.
         """
         self._flip = flip
-        self._image = image
+        self._path_image = path_image
         self._scale_rect = scale_rect
         self._scale_image = scale_image
         self._obj = obj
+
+    def _get_image(self) -> Surface:
+        """Отдаёт изображение кадра.
+
+        Returns:
+            Surface: изображение кадра.
+        """
+        if self._path_image is None:
+            return EMPTY_SURFACE
+        return self._cache.get((self._path_image,), image.load, self._path_image, callback='convert_alpha')
 
     def after_init(self) -> Self:
         """Инициализация frame после основной инициализации.
@@ -65,10 +91,20 @@ class BaseFrame:
 
     def _transform_image(self) -> None:
         """Преобразует изображение кадра анимации."""
-        image = transform.flip(self._image, self._flip.x, self._flip.y)
+        image = self._cache.get(
+            (self._path_image, self._flip.x, self._flip.y),
+            transform.flip,
+            self._get_image(),
+            self._flip.x,
+            self._flip.y,
+        )
         rect = image.get_frect()
-        self._image = transform.scale(
-            image, Size(rect.width * self._scale_image.width, rect.height * self._scale_image.height)
+        scale = Size(rect.width * self._scale_image.width, rect.height * self._scale_image.height)
+        self._image = self._cache.get(
+            (self._path_image, self._flip.x, self._flip.y, *self._scale_image),
+            transform.scale,
+            image,
+            scale,
         )
 
     def _set_data_frame(self) -> None:
@@ -92,26 +128,18 @@ class BaseFrame:
         Returns:
             Surface: изображение.
         """
-        return self._map_flip_by_derection[self._obj.direction if self._flip.direction else None](self._image)
+        return self._map_flip_by_derection[self._obj.direction if self._flip.direction else None](self)
 
-    def __deepcopy__(self, memo: dict) -> 'BaseFrame':
+    def __deepcopy__(self, memo: dict) -> 'Frame':
         """Копирует frame.
 
         Returns:
             BaseFrame: копия frame.
         """
         return self.__class__(
-            self._image,
             self._flip,
             self._scale_rect,
             self._scale_image,
+            self._path_image,
             memo.get('obj', self._obj),
         ).after_init()
-
-
-class EmptyFrame(BaseFrame):
-    """Класс представляющий пустой кадр."""
-
-
-class Frame(BaseFrame):
-    """Класс представляющий кадр анимации."""

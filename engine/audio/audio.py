@@ -1,7 +1,11 @@
+from pathlib import Path
+from typing import Callable
+
 from pygame import mixer
 
-from engine.audio.constants import SoundsPathEnum
+from engine.audio.constants import SoundsPathEnum, SoundTypeEnum
 from engine.metaclasses.singleton import SingletonMeta
+from engine.cache import Cache
 
 
 class Audio(metaclass=SingletonMeta):
@@ -11,8 +15,10 @@ class Audio(metaclass=SingletonMeta):
 
     def __init__(self) -> None:
         """Инициализация аудио игрового процесса."""
+
         self._effects: dict[str, mixer.Sound] = {}
         self._voices: dict[str, mixer.Sound] = {}
+        self._cache: Cache = Cache()
 
     def start_music(self) -> None:
         """Запускает воспроизведение музыки."""
@@ -43,7 +49,7 @@ class Audio(metaclass=SingletonMeta):
         """
         if sound := sounds.get(path):
             return sound
-        sound = mixer.Sound(path)
+        sound = self._cache.get((path,), mixer.Sound, path)
         sound.set_volume(volume)
         sounds[path] = sound
         return sound
@@ -69,14 +75,14 @@ class Audio(metaclass=SingletonMeta):
         path = str(SoundsPathEnum.EFFECTS.value / filename)
         return self._load(path, self.effects_volume, self._effects)
 
-    def load_voices(self, filename: str) -> mixer.Sound:
+    def load_voice(self, filename: str) -> mixer.Sound:
         """Загрузка звука голоса.
 
         Args:
             filename (str): название файла.
 
         Returns:
-            mixer.Sound: звук голоса.
+            Sound: звук голоса.
         """
         path = str(SoundsPathEnum.VOICES.value / filename)
         return self._load(path, self.voices_volume, self._voices)
@@ -147,3 +153,46 @@ class Audio(metaclass=SingletonMeta):
             volume (float): громкость.
         """
         self._volume('_voices_volume', volume, self._voices)
+
+
+class Sound:
+    """Класс представляющий sound.
+
+    Attributes:
+        _audio (Audio): объект для работы с аудио.
+    """
+
+    _map_get_sound: dict[SoundTypeEnum, Callable] = {
+        SoundTypeEnum.EFFECT: lambda path: Audio().load_effect(path),
+        SoundTypeEnum.VOICE: lambda path: Audio().load_voice(path),
+    }
+
+    def __init__(self, path: str | Path, sound_type: SoundTypeEnum, is_loop: bool = False) -> None:
+        """Инициализация sound.
+
+        Args:
+            path (str | Path): путь до файла.
+            sound_type (SoundTypeEnum): тип sound.
+            is_loop (bool, optional):  зацикленный звук. По дефолту False.
+        """
+        self._sound: mixer.Sound = self._map_get_sound[sound_type](path)
+        self._is_loop = -1 if is_loop else 0
+
+    def stop(self) -> None:
+        """Останавливает sound."""
+        self._sound.stop()
+
+    def play(self) -> None:
+        """Запускает sound."""
+        self._sound.play(loops=self._is_loop)
+
+    def __deepcopy__(self, memo: dict) -> 'Sound':
+        """При копировании возвращает сам себя.
+
+        Args:
+            memo (dict): словарь значений.
+
+        Returns:
+            Sound: Self.
+        """
+        return self

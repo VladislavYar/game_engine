@@ -1,12 +1,6 @@
-from pygame import Surface, SRCALPHA
-
-from engine.animations.frames import EmptyFrame
-from engine.constants import Size
-from engine.animations.constants import Flip, ScaleRect
+from engine.animations.constants import Flip, ScaleRect, ScaleImage
+from engine.animations.frames import Frame
 
 
-WITHOUT_SIZE = Size(0, 0)
-
-EMPTY_SURFACE = Surface(WITHOUT_SIZE, SRCALPHA)
-
-EMPTY_FRAME = EmptyFrame(EMPTY_SURFACE, Flip(), ScaleRect(), 0)
+EMPTY_FRAME = Frame(Flip(), ScaleRect(), ScaleImage())
+EMPTY_FRAME.after_init()

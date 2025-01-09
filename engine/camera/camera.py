@@ -25,22 +25,10 @@ class Camera(metaclass=SingletonMeta):
         self._smoothness: float = settings['engine']['camera']['camera_smoothness']
         base_visible_map_size: Size = Size(*settings['engine']['base_visible_map_size'])
         self._dead_zone: Size = Size(*settings['engine']['camera']['dead_zone'])
-        self._debug = settings['engine']['debug']['debug_mode']
         self._half_width: float = base_visible_map_size.width / 2
         self._half_height: float = base_visible_map_size.height / 2
         move = self._get_move()
         self._move(move)
-
-    def _debug_mode(self, move: Coordinate) -> None:
-        """Debug mode.
-
-        Args:
-            move (Coordinate): перемещение по осям x, y.
-        """
-        if not self._debug:
-            return
-        self._tile_grid.rect.x += move.x
-        self._tile_grid.rect.y += move.y
 
     def _get_move(self) -> Coordinate:
         """Отдаёт перемещение по осям x, y.
@@ -62,7 +50,7 @@ class Camera(metaclass=SingletonMeta):
         Args:
             move (Coordinate): перемещение по осям x, y.
         """
-        self._debug_mode(move)
+        self._tile_grid.move(move)
         for group in self._groups_shift:
             group.move(move)
 

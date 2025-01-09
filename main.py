@@ -11,6 +11,8 @@ from engine import Engine
 from engine.objects.groups import DynamicObjectsGroup, SolidObjectsGroup, TextObjectsGroup
 from engine.camera import Camera
 from engine.animations.constants import Flip, ScaleRect
+from engine.audio import Sound
+from engine.audio.constants import SoundTypeEnum
 
 
 PATH_ISOMETRY = Path('isometry')
@@ -45,6 +47,7 @@ class TestObject1(PlatformerPhysics, DynamicObject):
                 flip=Flip(direction=True),
                 is_loop=True,
                 time_between=20,
+                sound=Sound('double_jump.wav', SoundTypeEnum.EFFECT),
                 scale_rect=ScaleRect(0.7),
             ),
         ),
@@ -55,6 +58,7 @@ class TestObject1(PlatformerPhysics, DynamicObject):
                 flip=Flip(direction=True),
                 is_loop=True,
                 time_between=100,
+                sound=Sound('jump.wav', SoundTypeEnum.EFFECT),
                 scale_rect=ScaleRect(0.7),
             ),
         ),
@@ -142,6 +146,8 @@ class Game(Engine):
         rock2.set_rect_for_tile_grid(0, 0, 'center')
         box2.set_rect_for_tile_grid(3, 1, 'topleft')
         self.camera = Camera(obj1, self.draw_groups)
+        self._audio.load_music('Demented Daze.wav')
+        self._audio.start_music()
 
 
 if __name__ == '__main__':

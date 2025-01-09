@@ -19,15 +19,10 @@ from engine.physics.platformer.actions import (
 
 
 class PlatformerPhysics:
-    """Физический движок платформера.
+    """Физический движок платформера."""
 
-    Attributes:
-        events_animation_group (EventsAnimationGroup): группа событий и связанных с ними анимаций.
-    """
-
-    events_action_group = EventsActionGroup(
+    physics_events_action_group = EventsActionGroup(
         EventsAction(DEFAULT_EVENT, CheckObjectAction(is_loop=True)),
-        EventsAction(FALL_EVENT, FallAction(is_loop=True)),
         EventsAction(
             Events(
                 pygame.K_SPACE,
@@ -37,6 +32,7 @@ class PlatformerPhysics:
         (
             EventsAction(DOUBLE_JUMP_EVENT, DoubleJumpAction(is_loop=True)),
             EventsAction(JUMP_EVENT, JumpAction(is_loop=True)),
+            EventsAction(FALL_EVENT, FallAction(is_loop=True)),
         ),
         (
             EventsAction(Events(pygame.K_a, pygame.K_LSHIFT), RunLeftAction(is_loop=True)),

@@ -1,3 +1,3 @@
-from engine.audio.audio import Audio
+from engine.audio.audio import Audio, Sound
 
-__all__ = ('Audio',)
+__all__ = ('Audio', 'Sound')
