@@ -1,6 +1,3 @@
-from pygame import time
-
-
 class ManagementMixin:
     """Mixin старта, отстановки, перезапуска."""
 
@@ -8,7 +5,6 @@ class ManagementMixin:
         """Устанавливает дефолтные значения."""
         self._active_frame = 0
         self._elapsed = 0
-        self._ticks = time.get_ticks()
         self.is_active = False
         if self._sound and self.is_loop:
             self._sound.stop()
@@ -36,6 +32,5 @@ class ManagementMixin:
         Returns:
             tuple[int, int]: целая часть и остаток от деления _elapsed на time_between
         """
-        self._elapsed += time.get_ticks() - self._ticks
-        self._ticks = time.get_ticks()
+        self._elapsed += self._global_clock.frame_time
         return self._elapsed // self.time_between, self._elapsed % self.time_between

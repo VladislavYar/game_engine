@@ -90,10 +90,10 @@ class Engine(QuitMixin, SetSettingsMixin, metaclass=EngineMeta):
     def _main_loop(self) -> None:
         """Основной цикл игрового процесса."""
         while True:
+            self._global_clock.tick()
             self._events()
             self._update()
             self._draw()
-            self._global_clock.tick(self._settings['graphics']['max_fps'])
 
     def start(self) -> None:
         """Запуск игрового процесса."""

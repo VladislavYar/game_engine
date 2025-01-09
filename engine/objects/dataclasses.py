@@ -16,20 +16,28 @@ class Speed:
         run (int, optional): скорость бега. По дефолту 0.
         squat (int, optional): скорость в присяде. По дефолту 0.
         fall (int, optional): скорость падения. По дефолту 0.
+        jump (int, optional): скорость прыжка. По дефолту 0.
+        double_jump (int, optional): скорость двойного прыжка. По дефолту 0.
         walk_boost (int, optional): ускорение ходьбы. По дефолту 0.
         run_boost (int, optional): ускорение бега. По дефолту 0.
         squat_boost (int, optional): ускорение в присяде. По дефолту 0.
         fall_boost (int, optional): ускорение падения. По дефолту 0.
+        jump_boost (int, optional): ускорение прыжка. По дефолту 0.
+        double_jump_boostt (int, optional): ускорение двойного прыжка. По дефолту 0.
     """
 
     walk: int = 0
     run: int = 0
     squat: int = 0
     fall: int = 0
+    jump: int = 0
+    double_jump: int = 0
     walk_boost: int = 0
     run_boost: int = 0
     squat_boost: int = 0
     fall_boost: int = 0
+    jump_boost: int = 0
+    double_jump_boost: int = 0
 
 
 @dataclass

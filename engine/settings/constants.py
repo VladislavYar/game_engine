@@ -37,14 +37,6 @@ class TimeBetweenAnimationFramesEnum(IntEnum):
     MAX_TIME = 1000
 
 
-class TimeBetweenActionsEnum(IntEnum):
-    """Enum промежуток времени между действиями."""
-
-    DEFAULT_TIME = 50
-    MIN_TIME = 1
-    MAX_TIME = 1000
-
-
 class RectOutlineWidthEnum(IntEnum):
     """Enum ширины обводки rect."""
 
@@ -136,6 +128,14 @@ class ImageScaleEnum(Enum):
     DEFAULT_SCALE = 1
     MIN_SCALE = 1
     MAX_SCALE = 100
+
+
+class CoefFrameTimeEnum(Enum):
+    """Enum коэффициента времени кадра."""
+
+    DEFAULT_COEF = 0.1
+    MIN_COEF = 0.001
+    MAX_COEF = 1
 
 
 class DisplayFPSCoordinateEnum(IntEnum):

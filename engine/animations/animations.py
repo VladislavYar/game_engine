@@ -16,6 +16,7 @@ from engine.utils.events import check_events
 from engine.mixins.management import ManagementMixin
 from engine.settings import Settings
 from engine.animations.constants import Flip, ScaleRect, ScaleImage
+from engine.time import GlobalClock
 
 
 class Animation(ManagementMixin):
@@ -24,6 +25,7 @@ class Animation(ManagementMixin):
     Attributes:
         _settings (Settings): объект настроек игрового процесса.
         _audio (Audio): объект для работы с аудио.
+        _global_clock (GlobalClock): объект глобальных часов игрового процесса.
         _empty_frame (Frame): пустое кадр.
         _images (dict[str, Surface]): словарь отношения путь - загруженное изображение.
         time_between (int): время между кадрами.
@@ -31,9 +33,10 @@ class Animation(ManagementMixin):
 
     _settings: Settings = Settings()
     _audio: Audio = Audio()
+    _global_clock: GlobalClock = GlobalClock()
     _empty_frame: Frame = EMPTY_FRAME
     _images: dict[str, Surface] = {}
-    time_between: int = _settings['engine']['time_between']['time_between_animation_frames']
+    time_between: int = _settings['engine']['time_between_animation_frames']
 
     def __init__(
         self,

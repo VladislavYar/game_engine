@@ -7,6 +7,7 @@ from engine.utils.events import check_events
 from engine.mixins.management import ManagementMixin
 from engine.settings import Settings
 from engine.constants.direction import DirectionGroupEnum
+from engine.time import GlobalClock
 
 if TYPE_CHECKING:
     from engine.objects.groups import BaseGroup
@@ -19,18 +20,17 @@ class Action(ManagementMixin):
     Attributes:
         _settings (Settings): объект настроек игрового процесса.
         _audio (Audio): объект для работы с аудио.
-        time_between (int): время между действиями.
+        _global_clock (GlobalClock): объект глобальных часов игрового процесса.
     """
 
     _settings: Settings = Settings()
     _audio: Audio = Audio()
-    time_between: int = _settings['engine']['time_between']['time_between_actions']
+    _global_clock: GlobalClock = GlobalClock()
 
     def __init__(
         self,
         is_loop: bool = False,
         sound: str | None = None,
-        time_between: int | None = None,
         obj: Optional['Object'] = None,
     ) -> None:
         """Инициализация действия.
@@ -38,10 +38,8 @@ class Action(ManagementMixin):
         Args:
             is_loop (bool, optional): зацикленная анимация. По дефолту False.
             sound (str | None): название файла аудио действия. По дефолту None.
-            time_between (int | None, optional): Время между действиями. По дефолту None.
             obj (Optional['Object'], optional): игровой объект. По дефолту None.
         """
-        self.time_between = time_between if time_between else self.time_between
         self._sound = sound
         self._obj = obj
         self.is_loop = is_loop
@@ -56,16 +54,6 @@ class Action(ManagementMixin):
         self._set_default_values()
         return self
 
-    def _get_count_actions_performed(self) -> int:
-        """Необходимое количество совершения действия."""
-        count_actions_performed, self._elapsed = self._update_elapsed()
-        if not self.is_active or not count_actions_performed:
-            return 0
-        if not self.is_loop:
-            self.stop()
-            return 1
-        return count_actions_performed
-
     def perform(self) -> None:
         """Совершает действие."""
 
@@ -75,7 +63,7 @@ class Action(ManagementMixin):
         Returns:
             'Action': копия action.
         """
-        return self.__class__(self.is_loop, self._sound, self.time_between, memo.get('obj', self._obj)).after_init()
+        return self.__class__(self.is_loop, self._sound, memo.get('obj', self._obj)).after_init()
 
 
 class DynamicAction(Action):
@@ -183,6 +171,8 @@ class ActiveActions:
         if not self._active_actions.get(key):
             self._active_actions[key] = value
             value.start()
+        elif not value.is_loop:
+            return
         value.perform()
 
     def __delitem__(self, key: Events) -> None:

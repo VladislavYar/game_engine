@@ -4,7 +4,7 @@ import pygame
 
 from engine.animations import EventsAnimationGroup, Animation, EventsAnimation
 from engine.objects import DynamicObject, Speed, SolidObject
-from engine.events.constants import DEFAULT_EVENT, FALL_EVENT
+from engine.events.constants import DEFAULT_EVENT, FALL_EVENT, JUMP_EVENT, DOUBLE_JUMP_EVENT
 from engine.events import Events
 from engine.physics import PlatformerPhysics
 from engine import Engine
@@ -36,8 +36,28 @@ class BoxObject(SolidObject):
 
 
 class TestObject1(PlatformerPhysics, DynamicObject):
-    speed = Speed(2, 4, 5, 3, fall_boost=0.05)
+    speed = Speed(2, 4, 5, 4, 10, 15, fall_boost=0.3, jump_boost=-0.3, double_jump_boost=-0.3)
     events_animation_group = EventsAnimationGroup(
+        EventsAnimation(
+            DOUBLE_JUMP_EVENT,
+            Animation(
+                PATH_PLATFORMER / 'double_jump',
+                flip=Flip(direction=True),
+                is_loop=True,
+                time_between=20,
+                scale_rect=ScaleRect(0.7),
+            ),
+        ),
+        EventsAnimation(
+            JUMP_EVENT,
+            Animation(
+                PATH_PLATFORMER / 'jump',
+                flip=Flip(direction=True),
+                is_loop=True,
+                time_between=100,
+                scale_rect=ScaleRect(0.7),
+            ),
+        ),
         EventsAnimation(
             FALL_EVENT,
             Animation(
@@ -114,13 +134,13 @@ class Game(Engine):
         obj1 = TestObject1()
         rock1 = RockHeadObject()
         rock2 = RockHeadObject()
-        obj1.set_rect_for_tile_grid(0, 0, 'center')
-        rock1.set_rect_for_tile_grid(53, 55, 'center')
+        obj1.set_rect_for_tile_grid(2, 1, 'center')
+        rock1.set_rect_for_tile_grid(0, 1, 'center')
         tile.set_rect_for_tile_grid(3, 4, 'center')
-        box.set_rect_for_tile_grid(4, 6, 'center')
-        box1.set_rect_for_tile_grid(5, 10, 'center')
-        rock2.set_rect_for_tile_grid(55, 55, 'center')
-        box2.set_rect_for_tile_grid(3, 2, 'center')
+        box.set_rect_for_tile_grid(4, 6, 'topleft')
+        box1.set_rect_for_tile_grid(5, 10, 'topleft')
+        rock2.set_rect_for_tile_grid(0, 0, 'center')
+        box2.set_rect_for_tile_grid(3, 1, 'topleft')
         self.camera = Camera(obj1, self.draw_groups)
 
 

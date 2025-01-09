@@ -13,7 +13,6 @@ from engine.settings.constants import (
     RectInnerOutlineWidthEnum,
     DisplayFPSCoordinateEnum,
     RectOutlineWidthEnum,
-    TimeBetweenActionsEnum,
     TimeBetweenAnimationFramesEnum,
     VolumeEnum,
     FPSEnum,
@@ -25,6 +24,7 @@ from engine.settings.constants import (
     RectInnerOutlineRGBColorEnum,
     RectOutlineRGBColorEnum,
     CameraSmoothnessEnum,
+    CoefFrameTimeEnum,
 )
 from engine.utils.file import validate_format_file
 from engine.settings.types import TYPES_SETTINGS
@@ -158,23 +158,6 @@ class AudioSettingsSchema(BaseSettingsSchema):
         ge=VolumeEnum.MIN_VOLUME.value,
         le=VolumeEnum.MAX_VOLUME.value,
         description='Громкость голоса',
-    )
-
-
-class TimeBetweenSchema(BaseSettingsSchema):
-    """Схема времени между кадров."""
-
-    time_between_animation_frames: int = Field(
-        default=TimeBetweenAnimationFramesEnum.DEFAULT_TIME,
-        ge=TimeBetweenAnimationFramesEnum.MIN_TIME,
-        le=TimeBetweenAnimationFramesEnum.MAX_TIME,
-        description='Время между кадрами анимаций',
-    )
-    time_between_actions: int = Field(
-        default=TimeBetweenActionsEnum.DEFAULT_TIME,
-        ge=TimeBetweenActionsEnum.MIN_TIME,
-        le=TimeBetweenActionsEnum.MAX_TIME,
-        description='Время между действиями',
     )
 
 
@@ -324,12 +307,11 @@ class EngineSettingsSchema(BaseSettingsSchema):
         ),
         description='Камера',
     )
-    time_between: TimeBetweenSchema = Field(
-        default=TimeBetweenSchema(
-            time_between_animation_frames=TimeBetweenAnimationFramesEnum.DEFAULT_TIME,
-            time_between_actions=TimeBetweenActionsEnum.DEFAULT_TIME,
-        ),
-        description='Время между кадрами',
+    time_between_animation_frames: int = Field(
+        default=TimeBetweenAnimationFramesEnum.DEFAULT_TIME,
+        ge=TimeBetweenAnimationFramesEnum.MIN_TIME,
+        le=TimeBetweenAnimationFramesEnum.MAX_TIME,
+        description='Время между кадрами анимаций',
     )
     debug: DebugSchema = Field(
         default=DebugSchema(
@@ -386,6 +368,12 @@ class EngineSettingsSchema(BaseSettingsSchema):
             rect_outline_width=RectOutlineWidthEnum.DEFAULT_WIDTH,
         ),
         description='Сетка тайтлов',
+    )
+    coef_frame_time: float = Field(
+        default=CoefFrameTimeEnum.DEFAULT_COEF.value,
+        ge=CoefFrameTimeEnum.MIN_COEF.value,
+        le=CoefFrameTimeEnum.MAX_COEF.value,
+        description='Коэффициент времени кадра',
     )
 
     @field_validator('path_icon', mode='before')
