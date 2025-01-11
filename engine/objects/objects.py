@@ -31,6 +31,7 @@ class Object(BaseObject):
     events_animation_group: EventsAnimationGroup
 
     def __init__(self) -> None:
+        """Инициализация объекта."""
         super().__init__()
         self._set_default_values()
         self._init_animation_actions_group()

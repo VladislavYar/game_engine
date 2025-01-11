@@ -112,10 +112,6 @@ class AllObjectsGroup(BaseGroup):
     """Группа всех объектов."""
 
 
-class TextObjectsGroup(BaseGroup):
-    """Группа текстов."""
-
-
 class SolidObjectsGroup(BaseGroup):
     """Группа твёрдых объектов."""
 

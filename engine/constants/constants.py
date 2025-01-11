@@ -7,10 +7,6 @@ Size = namedtuple('Size', ('width', 'height'))
 
 Color = namedtuple('Color', ('red', 'green', 'blue'))
 
-ZERO_COORDINATES = Coordinate(0, 0)
-
-ZERO_COORDINATES_SHIFT = ZERO_COORDINATES
+Scale = namedtuple('Scale', ('width', 'height'), defaults=(1, 1))
 
 WRITING_ONLY = AttributeError('Атрибут доступен только для записи')
-
-WITHOUT_SIZE = Size(0, 0)

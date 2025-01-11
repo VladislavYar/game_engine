@@ -13,3 +13,4 @@ class BasePathEnum(Enum):
     FONTS_PATH = BASE_PATH / 'fonts'
     ICONS_PATH = IMAGES_PATH / 'icons'
     ANIMATIONS_PATH = IMAGES_PATH / 'animations'
+    BACKGROUNDS_PATH = IMAGES_PATH / 'backgrounds'

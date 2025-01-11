@@ -9,11 +9,12 @@ from engine.audio import Sound
 from engine.events.constants import DEFAULT_EVENT
 from engine.events import Events, Pressed
 from engine.constants.empty import EMPTY_FRAME
-from engine.animations.frames import Frame
+from engine.animations.frames import Frame, EmptyFrame
 from engine.utils.events import check_events
 from engine.mixins.management import ManagementMixin
 from engine.settings import Settings
-from engine.animations.constants import Flip, ScaleRect, ScaleImage
+from engine.animations.constants import Flip
+from engine.constants import Scale
 from engine.time import GlobalClock
 
 
@@ -23,13 +24,13 @@ class Animation(ManagementMixin):
     Attributes:
         _settings (Settings): объект настроек игрового процесса.
         _global_clock (GlobalClock): объект глобальных часов игрового процесса.
-        _empty_frame (Frame): пустое кадр.
+        _empty_frame (EmptyFrame): пустое кадр.
         time_between (int): время между кадрами.
     """
 
     _settings: Settings = Settings()
     _global_clock: GlobalClock = GlobalClock()
-    _empty_frame: Frame = EMPTY_FRAME
+    _empty_frame: EmptyFrame = EMPTY_FRAME
     time_between: int = _settings['engine']['time_between_animation_frames']
 
     def __init__(
@@ -39,8 +40,8 @@ class Animation(ManagementMixin):
         sound: Sound | None = None,
         time_between: int | None = None,
         flip: Flip = Flip(),
-        scale_rect: ScaleRect = ScaleRect(),
-        scale_image: ScaleImage = ScaleImage(_settings['engine']['scale_image'], _settings['engine']['scale_image']),
+        scale_rect: Scale = Scale(),
+        scale_image: Scale = Scale(_settings['engine']['scale_image'], _settings['engine']['scale_image']),
     ) -> None:
         """Инициализация анимации.
 
@@ -51,14 +52,14 @@ class Animation(ManagementMixin):
             time_between (int | None, optional): Время между кадрами фрейма. По дефолту None.
             flip (Flip, optional):
                 Флаги отражения по вертикале, горизонтале и по направлению движения. Flip().
-            scale_rect (ScaleRect, optional):
-                scale rect. По дефолту ScaleRect().
-            scale_image (ScaleImage, optional): scale image.
-                По дефолту ScaleImage(_settings['engine']['scale_image'], _settings['engine']['scale_image']).
+            scale_rect (Scale, optional):
+                scale rect. По дефолту Scale().
+            scale_image (Scale, optional): scale image.
+                По дефолту Scale(_settings['engine']['scale_image'], _settings['engine']['scale_image']).
         """
         path = BasePathEnum.ANIMATIONS_PATH.value / dir
         path_images = self._get_full_path_images(path)
-        self._frames = tuple(Frame(flip, scale_rect, scale_image, path_image) for path_image in path_images)
+        self._frames = tuple(Frame(path_image, flip, scale_rect, scale_image) for path_image in path_images)
         self.is_loop = is_loop
         self.time_between = time_between if time_between else self.time_between
         self._sound = sound

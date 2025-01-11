@@ -2,8 +2,8 @@ from pygame import FRect, Surface, draw
 
 from engine.metaclasses.singleton import SingletonMeta
 from engine.settings import Settings
-from engine.constants import Size, Coordinate, Color, ZERO_COORDINATES
-from engine.constants.empty import EMPTY_FRAME
+from engine.constants import Size, Coordinate, Color
+from engine.constants.empty import EMPTY_FRAME, ZERO_COORDINATES
 from engine.tile_grid.constants import POSITION_RECT_INNER_OUTLINE, SHIFT_NUMBER_POSITION_BY_X
 from engine.objects.text import Text
 

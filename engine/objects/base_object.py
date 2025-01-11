@@ -1,8 +1,7 @@
 from pygame import sprite, mask as mk
 
 from engine.objects.groups import AllObjectsGroup, BaseGroup
-from engine.constants.empty import EMPTY_FRAME
-from engine.constants import ZERO_COORDINATES, ZERO_COORDINATES_SHIFT
+from engine.constants.empty import EMPTY_FRAME, ZERO_COORDINATES, ZERO_COORDINATES_SHIFT
 
 
 class BaseObject(sprite.Sprite):

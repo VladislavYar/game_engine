@@ -3,18 +3,36 @@ from typing import Callable, TYPE_CHECKING, Optional, Self
 from pygame import transform, Surface, mask, Mask, image
 
 from engine.constants import Size, Coordinate
-from engine.animations.constants import Flip, ScaleRect, ScaleImage
+from engine.animations.constants import Flip
+from engine.constants import Scale
 from engine.constants.direction import DirectionGroupEnum
 from engine.settings import Settings
 from engine.cache import Cache
-from engine.animations.constants import EMPTY_SURFACE
 
 if TYPE_CHECKING:
     from engine.objects import Object
 
 
+class EmptyFrame:
+    """Класс пустого frame."""
+
+    def __init__(self, empty_surface: Surface, zero_coordinates_shift: Coordinate) -> None:
+        """Инициализация пустого frame.
+
+        Args:
+            empty_surface (Surface): пустое отображение.
+            zero_coordinates_shift (Coordinate): нулевой сдвиг координат.
+        """
+        self.image = empty_surface
+        self.rect = self.image.get_frect()
+        self.coordinate_shift = zero_coordinates_shift
+        self.mask = mask.from_surface(self.image)
+        self.rect_mask = Mask((self.rect.width, self.rect.height))
+        self.rect_mask.fill()
+
+
 class Frame:
-    """Класс представляющий базовый кадр.
+    """Класс представляющий frame.
 
     Attributes:
         _settings (Settings): объект настроек игрового процесса.
@@ -47,20 +65,20 @@ class Frame:
 
     def __init__(
         self,
+        path_image: str,
         flip: Flip,
-        scale_rect: ScaleRect,
-        scale_image: ScaleImage,
-        path_image: str | None = None,
+        scale_rect: Scale,
+        scale_image: Scale,
         obj: Optional['Object'] = None,
     ) -> None:
-        """Инициализация кадра.
+        """Инициализация frame.
 
         Args:
-            path_image (str | None, optional): путь до изображения кадра анимации. По дефолту None.
+            path_image (str): путь до изображения кадра анимации.
             flip (Flip):
                 Флаги отражения по вертикале, горизонтале и по направлению движения.
-            scale_rect (ScaleRect): scale rect.
-            scale_image (ScaleImage): scale image.
+            scale_rect (Scale): scale rect.
+            scale_image (Scale): scale image.
             obj (Optional['Object'], optional): игровой объект. По дефолту None.
         """
         self._flip = flip
@@ -68,16 +86,6 @@ class Frame:
         self._scale_rect = scale_rect
         self._scale_image = scale_image
         self._obj = obj
-
-    def _get_image(self) -> Surface:
-        """Отдаёт изображение кадра.
-
-        Returns:
-            Surface: изображение кадра.
-        """
-        if self._path_image is None:
-            return EMPTY_SURFACE
-        return self._cache.get((self._path_image,), image.load, self._path_image, callback='convert_alpha')
 
     def after_init(self) -> Self:
         """Инициализация frame после основной инициализации.
@@ -91,19 +99,19 @@ class Frame:
 
     def _transform_image(self) -> None:
         """Преобразует изображение кадра анимации."""
-        image = self._cache.get(
+        self._image = self._cache.get(
             (self._path_image, self._flip.x, self._flip.y),
             transform.flip,
-            self._get_image(),
+            self._cache.get((self._path_image,), image.load, self._path_image, callback='convert_alpha'),
             self._flip.x,
             self._flip.y,
         )
-        rect = image.get_frect()
+        rect = self._image.get_frect()
         scale = Size(rect.width * self._scale_image.width, rect.height * self._scale_image.height)
         self._image = self._cache.get(
             (self._path_image, self._flip.x, self._flip.y, *self._scale_image),
             transform.scale,
-            image,
+            self._image,
             scale,
         )
 
@@ -137,9 +145,9 @@ class Frame:
             BaseFrame: копия frame.
         """
         return self.__class__(
+            self._path_image,
             self._flip,
             self._scale_rect,
             self._scale_image,
-            self._path_image,
             memo.get('obj', self._obj),
         ).after_init()

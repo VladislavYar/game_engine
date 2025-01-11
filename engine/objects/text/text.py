@@ -6,8 +6,12 @@ from engine.constants import Color
 from engine.constants.path import BasePathEnum
 from engine.settings import Settings
 from engine.objects.base_object import BaseObject
-from engine.objects.groups import TextObjectsGroup
+from engine.objects.groups import BaseGroup
 from engine.cache import Cache
+
+
+class TextObjectsGroup(BaseGroup):
+    """Группа текстов."""
 
 
 class Text(BaseObject):

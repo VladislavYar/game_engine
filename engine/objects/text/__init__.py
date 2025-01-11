@@ -1,3 +1,3 @@
-from engine.objects.text.text import Text
+from engine.objects.text.text import Text, TextObjectsGroup
 
-__all__ = ('Text',)
+__all__ = ('Text', 'TextObjectsGroup')

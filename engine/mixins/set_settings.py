@@ -12,7 +12,6 @@ class SetSettingsMixin:
             cls._settings['graphics']['screen_resolution'],
             flags,
         )
-        cls.visible_map = pygame.Surface(cls._settings['engine']['base_visible_map_size'])
         if cls._settings['engine']['caption_title']:
             pygame.display.set_caption(cls._settings['engine']['caption_title'])
         if cls._settings['engine']['path_icon']:

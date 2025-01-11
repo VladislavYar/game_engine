@@ -1,6 +1,6 @@
 from typing import Iterable
 
-from pygame import event, display, Surface, transform, Color
+from pygame import event, display, transform
 
 from engine.mixins import QuitMixin, SetSettingsMixin
 from engine.settings import Settings
@@ -13,16 +13,19 @@ from engine.objects.text import Text
 from engine.tile_grid import TileGrid
 from engine.constants import Coordinate
 from engine.camera import Camera
+from engine.objects.backgrounds import BackgroundsGroup, BackgroundsSurface
+from engine.map import VisibleMap
 
 
 class Engine(QuitMixin, SetSettingsMixin, metaclass=EngineMeta):
     """Игровой движок.
 
     Attributes:
-        visible_map (Surface): отображение видимой части карты.
         events_groups (Iterable[BaseGroup]): группы для проверки событий. Проверяются в порядке индекса.
         update_groups (Iterable[BaseGroup]): группы для обновления. Обновляются в порядке индекса.
         draw_groups (Iterable[BaseGroup]): группы для вывода. Выводятся в порядке индекса.
+        visible_map (VisibleMap): отображение видимой части карты.
+        backgrounds (BackgroundsGroup | BackgroundsSurface): группа заднего плана или отображение.
         camera: (Camera | None, optional): игровая камера. По дефолту None.
         _global_clock (GlobalClock): объект глобальных часов игрового процесса.
         _audio (Audio): объект для работы с аудио.
@@ -33,10 +36,11 @@ class Engine(QuitMixin, SetSettingsMixin, metaclass=EngineMeta):
         _display_fps (Surface): отображение fps.
     """
 
-    visible_map: Surface
     events_groups: Iterable[BaseGroup]
     update_groups: Iterable[BaseGroup]
     draw_groups: Iterable[BaseGroup]
+    visible_map: VisibleMap = VisibleMap()
+    backgrounds: BackgroundsGroup | BackgroundsSurface = BackgroundsGroup()
     camera: Camera | None = None
     _global_clock: GlobalClock = GlobalClock()
     _audio: Audio = Audio()
@@ -79,7 +83,7 @@ class Engine(QuitMixin, SetSettingsMixin, metaclass=EngineMeta):
 
     def _draw(self) -> None:
         """Вывод элементов на дисплей."""
-        self.visible_map.fill(Color('black'))
+        self.backgrounds.draw(self.visible_map)
         self._debug_mode()
         for group in self.draw_groups:
             group.draw(self.visible_map)
