@@ -2,6 +2,7 @@ from typing import Iterable
 
 from engine.objects import Object
 from engine.objects.groups import BaseGroup
+from engine.objects.backgrounds import BackgroundsGroup
 from engine.metaclasses.singleton import SingletonMeta
 from engine.settings import Settings
 from engine.constants import Size, Coordinate
@@ -29,6 +30,7 @@ class Camera(metaclass=SingletonMeta):
         self._half_height: float = base_visible_map_size.height / 2
         move = self._get_move()
         self._move(move)
+        self._groups_shift = tuple(self._groups_shift) + (BackgroundsGroup(),)
 
     def _get_move(self) -> Coordinate:
         """Отдаёт перемещение по осям x, y.

@@ -3,7 +3,7 @@ from pygame import FRect, Surface, draw
 from engine.metaclasses.singleton import SingletonMeta
 from engine.settings import Settings
 from engine.constants import Size, Coordinate, Color
-from engine.constants.empty import EMPTY_FRAME, ZERO_COORDINATES
+from engine.constants.empty import EMPTY_FRAME, ZERO_COORDINATES, SRCALPHA
 from engine.tile_grid.constants import POSITION_RECT_INNER_OUTLINE, SHIFT_NUMBER_POSITION_BY_X
 from engine.objects.text import Text
 
@@ -67,8 +67,10 @@ class TileGrid(metaclass=SingletonMeta):
             Size(
                 self._settings['engine']['tile_grid']['columns'] * tile_size.width,
                 self._settings['engine']['tile_grid']['rows'] * tile_size.height,
-            )
+            ),
+            SRCALPHA,
         )
+        self.surface.set_alpha(128)
         self.rect = self.surface.get_frect()
         self.rect.center = Coordinate(self.rect.width / 2, self.rect.height / 2)
 

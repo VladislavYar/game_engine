@@ -80,7 +80,7 @@ class Text(BaseObject):
         """Обновляет текст."""
         rect_center = self.rect.center
         self.image = self._render_text()
-        self.rect = self.image.get_rect()
+        self.rect = self.image.get_frect()
         self.rect.center = rect_center
 
     @property

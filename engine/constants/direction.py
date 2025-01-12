@@ -21,3 +21,11 @@ class DirectionGroupEnum(Enum):
     UP_LEFT = frozenset((DirectionEnum.UP, DirectionEnum.LEFT))
     DOWN_LEFT = frozenset((DirectionEnum.DOWN, DirectionEnum.LEFT))
     DOWN_RIGHT = frozenset((DirectionEnum.DOWN, DirectionEnum.RIGHT))
+
+
+OPPOSITE_DIRECTIONS = {
+    DirectionEnum.UP: DirectionEnum.DOWN,
+    DirectionEnum.DOWN: DirectionEnum.UP,
+    DirectionEnum.LEFT: DirectionEnum.RIGHT,
+    DirectionEnum.RIGHT: DirectionEnum.LEFT,
+}
